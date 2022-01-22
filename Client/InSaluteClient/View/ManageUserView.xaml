@@ -1,0 +1,90 @@
+﻿<UserControl x:Class="InSalute.View.ManageUserView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:InSalute.View"
+             xmlns:utils="clr-namespace:InSalute.Utilities"
+             xmlns:viewmodel="clr-namespace:InSalute.ViewModel" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             d:DataContext="{d:DesignInstance Type=viewmodel:ManageUserViewModel}"
+             mc:Ignorable="d" 
+             d:DesignHeight="400" d:DesignWidth="600" MaxWidth="800" MaxHeight="600">
+    <UserControl.Resources>
+        <CollectionViewSource x:Key="Owners" Source="{Binding Roles}"/>
+        <FrameworkElement x:Key="ProxyElement" DataContext="{Binding}"/>
+        <BooleanToVisibilityConverter x:Key="booleanVisibilityConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <ContentControl Visibility="Collapsed" Content="{StaticResource ProxyElement}"/>
+
+        <StackPanel Grid.Row="0" Grid.Column="0" Background="#0099ff" VerticalAlignment="Center" Margin="6 6 6 0" >
+            <Label Content="Manage Users" Foreground="#FFFFFF" FontWeight="Bold" FontSize="20" VerticalAlignment="Top"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="2" Grid.Column="0" Margin="6 0 6 6" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="False" ItemsSource="{ Binding UsersCollection.View }" Background="White">
+            <DataGrid.Resources>
+                <SolidColorBrush x:Key="{ x:Static SystemColors.HighlightBrushKey }" Color="#22000000"/>
+            </DataGrid.Resources>
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="{Binding RowColor}"/>
+                    <Setter Property="Foreground" Value="#000000"/>
+                    <Setter Property="Padding" Value="0 16 0 16"/>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Padding" Value="4,8,4,8"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{ x:Type DataGridCell }">
+                                <Border Padding="{ TemplateBinding Padding }"
+                                            BorderBrush="{ TemplateBinding BorderBrush }"
+                                            BorderThickness="{ TemplateBinding BorderThickness }"
+                                            Background="{ TemplateBinding Background }"
+                                            SnapsToDevicePixels="True">
+                                    <ContentPresenter SnapsToDevicePixels="{ TemplateBinding SnapsToDevicePixels }"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </DataGrid.CellStyle>
+
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Binding="{Binding IsChecked}" Header="" Width="Auto" />
+                <DataGridTextColumn Binding="{ Binding Id }" Header="Id" Width="Auto" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{ Binding Email }" Header="Email" Width="*" />
+                <DataGridTextColumn Binding="{ Binding Username }" Header="Username" Width="*" />
+                <DataGridTextColumn Binding="{ Binding CreationDate }" Header="Creation Date" Width="*" />
+                <DataGridComboBoxColumn Header="Role" Width="90" SelectedItemBinding="{Binding Path=Role}"
+                                ItemsSource="{Binding Source={StaticResource Owners}}" Visibility="{Binding DataContext.IsAdmin, Source={StaticResource ProxyElement}, Converter={StaticResource booleanVisibilityConverter}}"/>
+
+                <DataGridTextColumn Binding="{ Binding Role }" Header="Role" IsReadOnly="True" Width="Auto" Visibility="{Binding DataContext.IsManager, Source={StaticResource ProxyElement}, Converter={StaticResource booleanVisibilityConverter}}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel Grid.Row="1" Height="40" LastChildFill="False">
+            <Button DockPanel.Dock="Left" Margin="6" Background="Transparent" BorderThickness="0" Command="{Binding EditUsersCommand}">
+                <Image DockPanel.Dock="Right" Source="../Resources/Images/save.png" RenderOptions.BitmapScalingMode="Fant" />
+            </Button>
+            <Button DockPanel.Dock="Left" Margin="0 6 6 6" Background="Transparent" BorderThickness="0" Command="{Binding DeleteUsersCommand}">
+                <Image DockPanel.Dock="Right" Source="../Resources/Images/delete.png" RenderOptions.BitmapScalingMode="Fant" />
+            </Button>
+            <Button DockPanel.Dock="Left" Margin="0 6" Background="Transparent" BorderThickness="0" Command="{Binding ReloadUsersCommand}">
+                <Image DockPanel.Dock="Right" Source="../Resources/Images/refresh.png" RenderOptions.BitmapScalingMode="Fant" />
+            </Button>
+        </DockPanel>
+        
+        <DockPanel Grid.Row="3" Height="40" LastChildFill="False" Margin="0 12 0 12">
+            <Button DockPanel.Dock="Right" Grid.ColumnSpan="4" Width="100" Content="Close" Style="{ StaticResource btnSmall }" Command="{Binding CloseManageUserCommand}"/>
+        </DockPanel>
+    </Grid>
+</UserControl>

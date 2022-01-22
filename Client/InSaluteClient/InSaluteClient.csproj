@@ -1,0 +1,65 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Platforms>AnyCPU;x64</Platforms>
+    <StartupObject>InSalute.App</StartupObject>
+    <ApplicationIcon>Logo.ico</ApplicationIcon>
+    <RootNamespace>InSalute</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\Images\admin.png" />
+    <None Remove="Resources\Images\delete.png" />
+    <None Remove="Resources\Images\developer.png" />
+    <None Remove="Resources\Images\FullPage.png" />
+    <None Remove="Resources\Images\funnel.png" />
+    <None Remove="Resources\Images\Logo.png" />
+    <None Remove="Resources\Images\logout.png" />
+    <None Remove="Resources\Images\refresh.png" />
+    <None Remove="Resources\Images\save.png" />
+    <None Remove="Resources\Images\settings.png" />
+    <None Remove="Resources\Images\user.png" />
+    <None Remove="Resources\Images\users.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EntityFramework" Version="6.4.4" />
+    <PackageReference Include="EventFlow.DependencyInjection" Version="0.83.4713" />
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.1.0" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
+    <PackageReference Include="MVVMEssentials.WPF" Version="1.0.3" />
+    <PackageReference Include="Prism.Core" Version="8.1.97" />
+    <PackageReference Include="SimpleModal.WPF" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="DataAccessLayer">
+      <HintPath>Lib\DataAccessLayer.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Images\admin.png" />
+    <Resource Include="Resources\Images\delete.png" />
+    <Resource Include="Resources\Images\developer.png" />
+    <Resource Include="Resources\Images\FullPage.png" />
+    <Resource Include="Resources\Images\funnel.png" />
+    <Resource Include="Resources\Images\Logo.png" />
+    <Resource Include="Resources\Images\logout.png" />
+    <Resource Include="Resources\Images\refresh.png" />
+    <Resource Include="Resources\Images\save.png" />
+    <Resource Include="Resources\Images\settings.png" />
+    <Resource Include="Resources\Images\user.png" />
+    <Resource Include="Resources\Images\users.png" />
+  </ItemGroup>
+
+
+</Project>
