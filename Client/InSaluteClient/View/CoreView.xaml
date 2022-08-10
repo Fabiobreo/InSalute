@@ -4,30 +4,53 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:InSalute.View"
-             xmlns:viewmodel="clr-namespace:InSalute.ViewModel" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:utilities="clr-namespace:InSalute.Utilities"
+             xmlns:viewmodel="clr-namespace:InSalute.ViewModel"
+             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:utilities="clr-namespace:InSalute.Utilities"
+             xmlns:vc="clr-namespace:InSalute.ValueConverters"
              d:DataContext="{d:DesignInstance Type=viewmodel:CoreViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="800" d:DesignWidth="1000">
+             d:DesignHeight="1200" d:DesignWidth="1000">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="booleanVisibilityConverter"/>
+        <vc:VisibleIfFalseConverter x:Key="visibleIfFalseConverter"/>
+        <vc:ListStringConverter x:Key="listStringConverter"/>
+        <vc:BorderClipConverter x:Key="borderClip"/>
     </UserControl.Resources>
 
     <DockPanel>
         <DockPanel.Resources>
             <utilities:BindingProxy x:Key="Proxy" Data="{Binding}" />
         </DockPanel.Resources>
-        <Menu DockPanel.Dock="Top">
+        <Menu DockPanel.Dock="Top" Background="{StaticResource ThemeMainColor}" Height="40">
             <Menu.ItemsPanel>
                 <ItemsPanelTemplate>
                     <DockPanel HorizontalAlignment="Stretch"/>
                 </ItemsPanelTemplate>
             </Menu.ItemsPanel>
 
+            <MenuItem Visibility="Visible" Command="{Binding LoadConfigurationCommand}" ToolTip="Carica una configurazione">
+                <MenuItem.Header>
+                    <StackPanel>
+                        <Image Width="30" Height="30" Source="../Resources/Images/folder.png" RenderOptions.BitmapScalingMode="Fant" />
+                    </StackPanel>
+                </MenuItem.Header>
+            </MenuItem>
+
+            <MenuItem Visibility="Visible" Command="{Binding SaveConfigurationCommand}" ToolTip="Salva l'attuale configurazione">
+                <MenuItem.Header>
+                    <StackPanel>
+                        <Image Width="30" Height="30" Source="../Resources/Images/save.png" RenderOptions.BitmapScalingMode="Fant" />
+                    </StackPanel>
+                </MenuItem.Header>
+            </MenuItem>
+
             <MenuItem HorizontalAlignment="Right" Visibility="Visible">
                 <MenuItem.Header>
                     <StackPanel Orientation="Horizontal">
-                        <ContentPresenter x:Name="CurrentUserRoleMenuItem" Margin="6 0" Content="{Binding DisplayedUsername}" />
-                        <Image x:Name="CurrentUserIcon" Width="18" Height="18" Source="../Resources/Images/user.png" RenderOptions.BitmapScalingMode="Fant"/>
+                        <ContentPresenter x:Name="CurrentUserRoleMenuItem" Margin="6 0" Content="{Binding DisplayedUsername}" VerticalAlignment="Center"
+                                          TextBlock.FontFamily="Roboto" TextBlock.FontWeight="Light" TextBlock.FontSize="18" TextBlock.Foreground="#FFFFFF"/>
+                        <Image x:Name="CurrentUserIcon" Width="30" Height="30" Source="../Resources/Images/user.png" RenderOptions.BitmapScalingMode="Fant"/>
                     </StackPanel>
                 </MenuItem.Header>
                 <MenuItem Header="Manage account" Command="{Binding NavigateUserCommand}">
@@ -48,178 +71,179 @@
                 </MenuItem>
             </MenuItem>
         </Menu>
+
         <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="30"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Grid.Column="0" Background="#0099ff" VerticalAlignment="Center" Margin="6 6 6 0" >
-                <Label Content="Expenses" Foreground="#FFFFFF" FontWeight="Bold" FontSize="20" VerticalAlignment="Top"/>
-            </StackPanel>
+            <Border Grid.Row="0" Grid.Column="0" CornerRadius="5" BorderThickness="2" BorderBrush="{StaticResource ThemeMainLighterColor}" Margin="6 6 6 0" ClipToBounds="True" IsEnabled="{Binding EmailSentCorrectly}">
+                <Border.Clip>
+                    <MultiBinding Converter="{StaticResource borderClip}">
+                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}"/>
+                        <Binding Path="ActualHeight" RelativeSource="{RelativeSource Self}"/>
+                        <Binding Path="CornerRadius" RelativeSource="{RelativeSource Self}"/>
+                    </MultiBinding>
+                </Border.Clip>
 
-            <DataGrid Grid.Row="1" Grid.Column="0" Margin="6 0 6 6" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" ItemsSource="{ Binding ExpensesCollection.View }" Background="White" DataContext="{Binding}">
-                <DataGrid.Resources>
-                    <SolidColorBrush x:Key="{ x:Static SystemColors.HighlightBrushKey }" Color="#22000000"/>
-                </DataGrid.Resources>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Height="35" Text="Dati mittente" Foreground="#FFFFFF" Background="{StaticResource ThemeMainColor}" Style="{StaticResource TextBoxHeaderStyle}" FontWeight="Bold" VerticalAlignment="Top"/>
 
-                <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow">
-                        <Setter Property="Background" Value="#cce5f6"/>
-                        <Setter Property="Foreground" Value="#000000"/>
-                        <Setter Property="Padding" Value="0 16 0 16"/>
-                    </Style>
-                </DataGrid.RowStyle>
-                <DataGrid.CellStyle>
-                    <Style TargetType="DataGridCell">
-                        <Setter Property="Padding" Value="4,8,4,8"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="{ x:Type DataGridCell }">
-                                    <Border Padding="{ TemplateBinding Padding }"
-                                            BorderBrush="{ TemplateBinding BorderBrush }"
-                                            BorderThickness="{ TemplateBinding BorderThickness }"
-                                            Background="{ TemplateBinding Background }"
-                                            SnapsToDevicePixels="True">
-                                        <ContentPresenter SnapsToDevicePixels="{ TemplateBinding SnapsToDevicePixels }"/>
-                                    </Border>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </DataGrid.CellStyle>
+                    <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource LabelStyle}" FontWeight="Bold" Content="Email" Margin="6"/>
+                    <Label Grid.Row="1" Grid.Column="1" Style="{StaticResource LabelStyle}" FontWeight="Bold" Content="Password" Margin="6"/>
 
-                <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Binding="{Binding IsChecked}" Header="" Width="Auto" />
-                    <DataGridTextColumn Binding="{ Binding Date, StringFormat=d }" Header="Date" Width="Auto"/>
-                    <DataGridTextColumn Binding="{ Binding Time }" Header="Time" Width="Auto"/>
-                    <DataGridTextColumn Binding="{ Binding Description }" Header="Description" Width="*" />
-                    <DataGridTextColumn Binding="{ Binding Amount, StringFormat=N2 }" Header="Amount" Width="*" />
-                    <DataGridTextColumn Binding="{ Binding Comment }" Header="Comment" Width="*" />
-                    <DataGridTextColumn Binding="{ Binding UserId }" Header="User id" IsReadOnly="{Binding Data.IsNotAdmin, Source={StaticResource Proxy}}" Width="auto" />
-                </DataGrid.Columns>
-            </DataGrid>
+                    <TextBox Grid.Row="2" Grid.Column="0" Style="{StaticResource TextBoxStyle}" Margin="6 0 6 12" Text="{Binding SenderEmail}"/>
+                    <PasswordBox Grid.Row="2" Grid.Column="1" Style="{StaticResource PasswordBoxStyle}" Margin="6 0 6 12" utilities:PasswordHelper.Attach="True" 
+                                                                utilities:PasswordHelper.Password="{Binding Path=SenderPassword, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}"  Visibility="{Binding SenderPasswordVisible, Converter={StaticResource visibleIfFalseConverter}}"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" Text="{Binding SenderPassword}" Margin="6 0 6 12" Visibility="{Binding SenderPasswordVisible, Converter={StaticResource booleanVisibilityConverter}}"/>
 
-            <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Margin="0 6 6 0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+                    <CheckBox Grid.Row="2" Grid.Column="2" Style="{StaticResource CheckBoxStyle}" Content="Mostra password" Margin="0 0 6 12" IsChecked="{Binding SenderPasswordVisible}"/>
+                </Grid>
+            </Border>
 
-                <Border Grid.Row="0" BorderThickness="1" BorderBrush="Gainsboro">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30"/>
-                            <RowDefinition Height="auto"/>
-                            <RowDefinition Height="60"/>
-                            <RowDefinition Height="auto"/>
-                            <RowDefinition Height="auto"/>
-                            <RowDefinition Height="50"/>
-                        </Grid.RowDefinitions>
+            <Border Grid.Row="1" Grid.Column="0" CornerRadius="5" BorderThickness="2" BorderBrush="{StaticResource ThemeMainLighterColor}" Margin="6 12 6 0" IsEnabled="{Binding EmailSentCorrectly}">
+                <Border.Clip>
+                    <MultiBinding Converter="{StaticResource borderClip}">
+                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}"/>
+                        <Binding Path="ActualHeight" RelativeSource="{RelativeSource Self}"/>
+                        <Binding Path="CornerRadius" RelativeSource="{RelativeSource Self}"/>
+                    </MultiBinding>
+                </Border.Clip>
 
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Height="35" Text="Dati destinatario" Foreground="#FFFFFF" Background="{StaticResource ThemeMainColor}" Style="{StaticResource TextBoxHeaderStyle}" FontWeight="Bold" VerticalAlignment="Top"/>
 
-                        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Background="#0099ff" VerticalAlignment="Center" Margin="0 0 0 6" >
-                            <Label Content="Insert an expense" Foreground="#FFFFFF" FontWeight="Bold" FontSize="20" VerticalAlignment="Top"/>
+                    <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource LabelStyle}" FontWeight="Bold" Content="Email" Margin="6"/>
+
+                    <TextBox Grid.Row="2" Grid.Column="0" Style="{StaticResource TextBoxStyle}" Margin="6 0 6 0" Text="{Binding ReceiverEmail}"/>
+                    
+                    <Label Grid.Row="3" Grid.Column="0" Style="{StaticResource LabelStyle}" FontWeight="Bold" Content="Cognome" Margin="6"/>
+                    <Label Grid.Row="3" Grid.Column="1" Style="{StaticResource LabelStyle}" FontWeight="Bold" Content="Nome" Margin="6"/>
+
+                    <TextBox Grid.Row="4" Grid.Column="0" Style="{StaticResource TextBoxStyle}" Margin="6 0 6 0" Text="{Binding ReceiverSurname}"/>
+                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource TextBoxStyle}" Margin="6 0 9 0" Text="{Binding ReceiverName}"/>
+
+                    <Label Grid.Row="5" Grid.Column="0" Style="{StaticResource LabelStyle}" FontWeight="Bold" Content="Allegati" Margin="6"/>
+                    <Label Grid.Row="5" Grid.Column="1" Style="{StaticResource LabelStyle}" FontWeight="Bold" Content="Fattura" Margin="6"/>
+
+                    <DockPanel Grid.Row="6" Grid.Column="0" Margin="0 0 0 12">
+                        <Button DockPanel.Dock="Right" Width="100" Style="{StaticResource ButtonStyle}" Content="Sfoglia" Margin="6 0 9 0" Command="{Binding LoadAttachmentsCommand}"/>
+                        <TextBox Style="{StaticResource TextBoxStyle}" Margin="6 0 12 0" IsReadOnly="True" Text="{Binding ReceiverAttachments, Converter={StaticResource listStringConverter}}"
+                                 ToolTipService.ToolTip="{Binding Text, RelativeSource={RelativeSource self}}" ToolTipService.ShowOnDisabled="True"/>
+                    </DockPanel>
+                    
+                    <DockPanel Grid.Row="6" Grid.Column="1" Margin="0 0 0 12">
+                        <Button DockPanel.Dock="Right" Width="100" Style="{StaticResource ButtonStyle}" Content="Sfoglia" Margin="6 0 9 0" Command="{Binding LoadBillingCommand}"/>
+                        <TextBox Style="{StaticResource TextBoxStyle}" Margin="6 0 12 0" IsReadOnly="True" Text="{Binding ReceiverBilling}"
+                                 ToolTipService.ToolTip="{Binding Text, RelativeSource={RelativeSource self}}" ToolTipService.ShowOnDisabled="True"/>
+                    </DockPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Grid.Column="0" CornerRadius="5" BorderThickness="2" BorderBrush="{StaticResource ThemeMainLighterColor}" Margin="6 12 6 0" IsEnabled="{Binding EmailSentCorrectly}">
+                <Border.Clip>
+                    <MultiBinding Converter="{StaticResource borderClip}">
+                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}"/>
+                        <Binding Path="ActualHeight" RelativeSource="{RelativeSource Self}"/>
+                        <Binding Path="CornerRadius" RelativeSource="{RelativeSource Self}"/>
+                    </MultiBinding>
+                </Border.Clip>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Height="35" Text="Email" Foreground="#FFFFFF" Background="{StaticResource ThemeMainColor}" Style="{StaticResource TextBoxHeaderStyle}" FontWeight="Bold" VerticalAlignment="Top"/>
+
+                    <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource LabelStyle}" FontWeight="Bold" HorizontalAlignment="Center" Content="Prima Email" Margin="6"/>
+                    
+                    <ToggleButton x:Name="EmailHelper" Grid.Row="1" Grid.Column="1" Width="35" Height="35" Style="{StaticResource RoundToggleButton}">
+                        <StackPanel>
+                            <TextBlock Margin="0 7 0 0" Style="{StaticResource TextBlockStyle}" Foreground="White" Background="Transparent">
+                                <Run Text="?" />
+                            </TextBlock>
+
+                            <Popup Name="HelpPopup" IsOpen="{Binding IsChecked, ElementName=EmailHelper}" >
+                                <Border BorderThickness="1" BorderBrush="{StaticResource ThemeMainLighterColor}">
+                                    <TextBlock Name="RunPopupText" Foreground="#FFFFF0" Background="{StaticResource ThemeMainLighterColor}" Width="500" Height="195" Padding="20" Style="{StaticResource TextBlockStyle}" TextWrapping="Wrap">
+                                        <TextBlock.Inlines>
+                                            <Run FontWeight="Bold" FontSize="20" Text="Formattazione speciale"/>
+                                            <LineBreak/>
+                                            All'interno del corpo della mail si possono utilizzare i seguenti caratteri di formattazione speciale:
+                                            <LineBreak/>
+                                            - {NOME}: Inserisce il nome del destinario.
+                                            <LineBreak/>
+                                            - {COGNOME}: Inserisce il cognome del destinatario.
+                                            <LineBreak/>
+                                            - {PASSWORD}: Inserisce la password con cui son stati criptati gli allegati.
+                                            <LineBreak/>
+                                        </TextBlock.Inlines>
+                                    </TextBlock>
+                                </Border>
+                            </Popup>
                         </StackPanel>
+                    </ToggleButton>
+                    <Label Grid.Row="1" Grid.Column="2" Style="{StaticResource LabelStyle}" FontWeight="Bold" HorizontalAlignment="Center" Content="Seconda Email" Margin="6"/>
 
-                        <Label Margin="0 0 0 6" Grid.Row="1" Grid.Column="0" Content="Date" FontWeight="Bold"/>
-                        <xctk:DateTimePicker Margin="0 0 0 6" Grid.Row="1" Grid.Column="1" Format="ShortDate" TimePickerVisibility="Collapsed" Value="{Binding NewExpenseDate}"/>
-                        <Label Margin="0 0 0 6" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Right" Content="Time" FontWeight="Bold"/>
-                        <xctk:TimePicker Margin="0 0 6 6" Grid.Row="1" Grid.Column="3" Format="ShortTime" Value="{Binding NewExpenseTime}"/>
+                    <DockPanel Grid.Row="2" Grid.Column="0">
+                        <Label Style="{StaticResource LabelStyle}" Content="Oggetto:" Margin="6 3 0 0"/>
+                        <TextBox Style="{StaticResource TextBoxStyle}" Margin="6 0 12 0" Text="{Binding FirstObject}"/>
+                    </DockPanel>
 
-                        <Label Margin="0 0 0 6" Grid.Row="2" Grid.Column="0" Content="Description" FontWeight="Bold"/>
-                        <TextBox Margin="0 0 6 6" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding NewExpenseDescription}" TextWrapping="Wrap"/>
+                    <DockPanel Grid.Row="2" Grid.Column="2">
+                        <Label Style="{StaticResource LabelStyle}" Content="Oggetto:" Margin="6 3 0 0"/>
+                        <TextBox Style="{StaticResource TextBoxStyle}" Margin="6 0 12 0" Text="{Binding SecondObject}"/>
+                    </DockPanel>
 
-                        <Label Margin="0 0 0 6" Grid.Row="3" Grid.Column="0" Content="Amount" FontWeight="Bold"/>
-                        <xctk:DecimalUpDown FormatString="F2" Value="{Binding NewExpenseAmount}" Increment=".01" Margin="0 0 0 6" Grid.Row="3" Grid.Column="1" VerticalContentAlignment="Center" />
-                        <Label Margin="0 0 0 6" Grid.Row="3" Grid.Column="2" HorizontalAlignment="Right" Content="User id" FontWeight="Bold"/>
-                        <xctk:LongUpDown Margin="0 0 6 6" Grid.Row="3" Grid.Column="3" VerticalContentAlignment="Center" IsEnabled="{Binding NewExpenseIdEnable}" Value="{Binding NewExpenseUserId}"/>
+                    <DockPanel Grid.Row="3" Grid.Column="0" Margin="12">
+                        <RichTextBox Style="{StaticResource RichTextBoxStyle}" Height="{Binding RelativeSource={RelativeSource Self},
+                  Path=Parent.ActualHeight}" IsEnabled="True" utilities:RichTextBoxHelper.DocumentXaml="{Binding FirstEmail, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}"/>
+                    </DockPanel>
 
-                        <Label Margin="0 0 0 6" Grid.Row="4" Grid.Column="0" Content="Comment" FontWeight="Bold"/>
-                        <TextBox Margin="0 0 6 6" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding NewExpenseComment}" VerticalContentAlignment="Center"/>
+                    <DockPanel Grid.Row="3" Grid.Column="2" Margin="12">
+                        <RichTextBox Style="{StaticResource RichTextBoxStyle}" Height="{Binding RelativeSource={RelativeSource Self},
+                  Path=Parent.ActualHeight}" IsEnabled="True" utilities:RichTextBoxHelper.DocumentXaml="{Binding SecondEmail}"/>
+                    </DockPanel>
+                </Grid>
+            </Border>
 
-                        <Button Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="4" Width="250" Content="Add Expense" Style="{ StaticResource btnSmall }" Command="{Binding AddExpenseCommand}"/>
-                    </Grid>
-                </Border>
-
-                <Border Margin="0 6 0 6" Grid.Row="1" BorderThickness="1" BorderBrush="Gainsboro">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Background="#0099ff" VerticalAlignment="Center" Margin="0 0 0 6" >
-                            <Label Content="Statistics" Foreground="#FFFFFF" FontWeight="Bold" FontSize="20" VerticalAlignment="Top"/>
-                        </StackPanel>
-
-                        <DataGrid Grid.Row="1" Margin="6" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" ItemsSource="{ Binding StatisticsCollection.View }" Background="White">
-                            <DataGrid.Resources>
-                                <SolidColorBrush x:Key="{ x:Static SystemColors.HighlightBrushKey }" Color="#22000000"/>
-                            </DataGrid.Resources>
-
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Setter Property="Background" Value="#fbf0c3"/>
-                                    <Setter Property="Foreground" Value="#000000"/>
-                                    <Setter Property="Padding" Value="0,16,0,16"/>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.CellStyle>
-                                <Style TargetType="DataGridCell">
-                                    <Setter Property="Padding" Value="4 8 4 8"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="{ x:Type DataGridCell }">
-                                                <Border Padding="{ TemplateBinding Padding }"
-                                            BorderBrush="{ TemplateBinding BorderBrush }"
-                                            BorderThickness="{ TemplateBinding BorderThickness }"
-                                            Background="{ TemplateBinding Background }"
-                                            SnapsToDevicePixels="True">
-                                                    <ContentPresenter SnapsToDevicePixels="{ TemplateBinding SnapsToDevicePixels }"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </DataGrid.CellStyle>
-
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Binding="{ Binding WeeksAgo }" Header="Weeks Ago" IsReadOnly="True" Width="auto" />
-                                <DataGridTextColumn Binding="{ Binding Total, StringFormat=N2 }" Header="Total Amount" IsReadOnly="True" Width="*" />
-                                <DataGridTextColumn Binding="{ Binding AvgDaily, StringFormat=N2 }" Header="Avg daily spending" IsReadOnly="True" Width="auto" />
-                                <DataGridTextColumn Binding="{ Binding UserId }" Header="User id" IsReadOnly="True" Width="auto" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Grid>
-                </Border>
-            </Grid>
-
-            <DockPanel Grid.Row="2" Grid.ColumnSpan="2" Background="#0099ff" Height="40">
-                <Button DockPanel.Dock="Right" Margin="6 2 6 2" Background="Transparent" BorderThickness="0" Command="{Binding FilterExpensesCommand}">
-                    <Image  Source="../Resources/Images/funnel.png"  RenderOptions.BitmapScalingMode="Fant" />
-                </Button>
-                <Button DockPanel.Dock="Right" Margin="6 2 0 2" Background="Transparent" BorderThickness="0" Command="{Binding ReloadExpensesCommand}">
-                    <Image DockPanel.Dock="Right" Source="../Resources/Images/refresh.png" RenderOptions.BitmapScalingMode="Fant" />
-                </Button>
-                <Button DockPanel.Dock="Right" Margin="6 2 0 2" Background="Transparent" BorderThickness="0" Command="{Binding EditExpensesCommand}">
-                    <Image DockPanel.Dock="Right" Source="../Resources/Images/save.png" RenderOptions.BitmapScalingMode="Fant" />
-                </Button>
-                <Button DockPanel.Dock="Right" Margin="6 2 0 2" Background="Transparent" BorderThickness="0" Command="{Binding DeleteExpensesCommand}">
-                    <Image DockPanel.Dock="Right" Source="../Resources/Images/delete.png" RenderOptions.BitmapScalingMode="Fant" />
-                </Button>
-                <Label/>
-            </DockPanel>
+            <WrapPanel Grid.Row="3" Grid.Column="0" HorizontalAlignment="Center" Margin="6">
+                <Button Width="200" Height="50" Style="{StaticResource ButtonStyle}" HorizontalAlignment="Center" Content="{Binding SendEmailText}" Command="{Binding SendEmailCommand}"/>
+            </WrapPanel>
         </Grid>
     </DockPanel>
 </UserControl>

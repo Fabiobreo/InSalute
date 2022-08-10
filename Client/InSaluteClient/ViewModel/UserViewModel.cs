@@ -70,7 +70,7 @@ namespace InSalute.ViewModel
         public ICommand CloseUserCommand { get; }
         #endregion UI Commands
 
-        private UserStore UserStore;
+        private readonly UserStore UserStore;
 
         public UserViewModel(UserStore userStore, INavigationService loginNavigationService, INavigationService closeModalService)
         {
@@ -94,13 +94,13 @@ namespace InSalute.ViewModel
         {
             if (string.IsNullOrWhiteSpace(Email) || !IsValidEmail(Email))
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("Please enter a valid email.", "Wrong email", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Please enter a valid email.", "Wrong email", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Username))
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("Please enter a valid username", "Wrong username", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Please enter a valid username", "Wrong username", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -114,7 +114,6 @@ namespace InSalute.ViewModel
                 id = UserStore.CurrentUser.Id,
                 creation_date = UserStore.CurrentUser.CreationDate,
                 role = UserStore.CurrentUser.Role,
-                email = Email,
                 username = Username
             };
 
@@ -123,14 +122,14 @@ namespace InSalute.ViewModel
                 userToEdit.password = Convert.ToBase64String(Encoding.UTF8.GetBytes(Password));
             }
 
-            Task<HttpResponseMessage> userDetails = null;
+            Task<HttpResponseMessage> userDetails;
             try
             {
                 userDetails = WebAPI.PutCall(API_URIs.user, parameters, userToEdit, UserStore.CurrentUser.Token);
             }
             catch (Exception ex)
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -147,20 +146,20 @@ namespace InSalute.ViewModel
                     }
                 }
                 Password = string.Empty;
-                Xceed.Wpf.Toolkit.MessageBox.Show("User details updated successfully.", "Update successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("User details updated successfully.", "Update successful", MessageBoxButton.OK, MessageBoxImage.Information);
                 UserStore.CurrentUser = UserStore.CurrentUser; // To trigger ui refresh
                 CloseUserCommand.Execute(null);
             }
             else
             {
                 Password = string.Empty;
-                Xceed.Wpf.Toolkit.MessageBox.Show("There was an error during the update.\nError: " + userDetails.Result.StatusCode, "Update failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("There was an error during the update.\nError: " + userDetails.Result.StatusCode, "Update failed", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
         private void DeleteAccount()
         {
-            MessageBoxResult result = Xceed.Wpf.Toolkit.MessageBox.Show("Are you REALLY sure that you want to delete your account? This choice is final!", "No going back", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            MessageBoxResult result = MessageBox.Show("Are you REALLY sure that you want to delete your account? This choice is final!", "No going back", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result == MessageBoxResult.No)
             {
                 return;
@@ -171,14 +170,14 @@ namespace InSalute.ViewModel
                 ["id"] = Id
             };
 
-            Task<HttpResponseMessage> userDetails = null;
+            Task<HttpResponseMessage> userDetails;
             try
             {
                 userDetails = WebAPI.DeleteCall(API_URIs.user, parameters, UserStore.CurrentUser.Token);
             }
             catch (Exception ex)
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -186,12 +185,12 @@ namespace InSalute.ViewModel
             {
                 UserStore.CurrentUser = null;
             
-                Xceed.Wpf.Toolkit.MessageBox.Show("User successfully deleted. We hope to see you again soon.", "User deleted", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("User successfully deleted. We hope to see you again soon.", "User deleted", MessageBoxButton.OK, MessageBoxImage.Information);
                 NavigateLoginCommand.Execute(null);
             }
             else
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("There was an error during the deletion.\nError: " + userDetails.Result.StatusCode, "Deletion failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("There was an error during the deletion.\nError: " + userDetails.Result.StatusCode, "Deletion failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

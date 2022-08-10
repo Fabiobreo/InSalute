@@ -54,7 +54,7 @@ namespace InSalute.ViewModel
             }
         }
 
-        private List<UserExtended> EditedUsers = new List<UserExtended>();
+        private readonly List<UserExtended> EditedUsers = new List<UserExtended>();
 
         #endregion User Table
 
@@ -65,11 +65,11 @@ namespace InSalute.ViewModel
         public ICommand CloseManageUserCommand { get; }
         #endregion UI buttons
 
-        private static ObservableCollection<string> _roles = new ObservableCollection<string>()
+        private static readonly ObservableCollection<string> _roles = new ObservableCollection<string>()
         { "user", "manager", "admin" };
         public static ObservableCollection<string> Roles { get => _roles; }
 
-        private UserStore UserStore;
+        private readonly UserStore UserStore;
 
         public bool IsAdmin { get; }
         public bool IsManager { get; }
@@ -102,7 +102,7 @@ namespace InSalute.ViewModel
 
             if (usersToDelete.Count > 0)
             {
-                MessageBoxResult result = Xceed.Wpf.Toolkit.MessageBox.Show("Do you really want to delete " + usersToDelete.Count + " user(s)?\nThis choice is final.", "Delete users", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                MessageBoxResult result = MessageBox.Show("Do you really want to delete " + usersToDelete.Count + " user(s)?\nThis choice is final.", "Delete users", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
                 if (result == MessageBoxResult.Yes)
                 {
@@ -128,7 +128,7 @@ namespace InSalute.ViewModel
                         }
                         catch (Exception ex)
                         {
-                            Xceed.Wpf.Toolkit.MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
                             return;
                         }
 
@@ -149,11 +149,11 @@ namespace InSalute.ViewModel
 
                     if (eliminated == usersToDelete.Count)
                     {
-                        Xceed.Wpf.Toolkit.MessageBox.Show("All users were deleted successfully", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show("All users were deleted successfully", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
-                        Xceed.Wpf.Toolkit.MessageBox.Show("There was some problems and we could delete only " + eliminated + " out of " + usersToDelete.Count + " users.\n" +
+                        MessageBox.Show("There was some problems and we could delete only " + eliminated + " out of " + usersToDelete.Count + " users.\n" +
                             "Please retry to delete later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     ReloadUsers();
@@ -161,7 +161,7 @@ namespace InSalute.ViewModel
             }
             else
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("There are no users listed to be eliminated.", "No eliminated expenses", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("There are no users listed to be eliminated.", "No eliminated expenses", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
@@ -183,7 +183,6 @@ namespace InSalute.ViewModel
                     Users editedUser = new Users()
                     {
                         id = user.Id,
-                        email = user.Email,
                         username = user.Username,
                         creation_date = user.CreationDate,
                         role = user.Role
@@ -196,7 +195,7 @@ namespace InSalute.ViewModel
                     }
                     catch (Exception ex)
                     {
-                        Xceed.Wpf.Toolkit.MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
@@ -210,7 +209,7 @@ namespace InSalute.ViewModel
                 if (edited != total)
                 {
                     errorOccurred = true;
-                    Xceed.Wpf.Toolkit.MessageBox.Show("There was some problems and we could save only " + edited.ToString() + " out of " + total.ToString() + " users.\nPlease retry to save later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("There was some problems and we could save only " + edited.ToString() + " out of " + total.ToString() + " users.\nPlease retry to save later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             
@@ -238,7 +237,7 @@ namespace InSalute.ViewModel
                     {
                         string message = "Could not add user with email: " + user.Email + " and username: " + user.Username + "\n";
                         message += "Fix problems with: \n" + (emailError ? "- Email\n" : "") + (usernameError ? "- Username" : "");
-                        Xceed.Wpf.Toolkit.MessageBox.Show(message, "User not added", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(message, "User not added", MessageBoxButton.OK, MessageBoxImage.Warning);
                         continue;
                     }
                     else
@@ -246,7 +245,6 @@ namespace InSalute.ViewModel
                         Users newUser = new Users()
                         {
                             id = user.Id,
-                            email = user.Email,
                             password = Convert.ToBase64String(Encoding.UTF8.GetBytes("Password")),
                             username = user.Username,
                             creation_date = user.CreationDate,
@@ -260,7 +258,7 @@ namespace InSalute.ViewModel
                         }
                         catch (Exception ex)
                         {
-                            Xceed.Wpf.Toolkit.MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
                             return;
                         }
 
@@ -276,7 +274,7 @@ namespace InSalute.ViewModel
                 if (added != total)
                 {
                     errorOccurred = true;
-                    Xceed.Wpf.Toolkit.MessageBox.Show("There was some problems and we could save only " + added.ToString() + " out of " + total.ToString() + " users.\nPlease retry to save later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("There was some problems and we could save only " + added.ToString() + " out of " + total.ToString() + " users.\nPlease retry to save later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
 
                 foreach (UserExtended user in usersToAdd)
@@ -293,13 +291,13 @@ namespace InSalute.ViewModel
 
                 if (added > 0)
                 {
-                    Xceed.Wpf.Toolkit.MessageBox.Show("The default password is 'password'.\nPlease remember to tell the user to change it to a secure one when it logs in the first time.", "User password", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("The default password is 'password'.\nPlease remember to tell the user to change it to a secure one when it logs in the first time.", "User password", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
 
             if (!errorOccurred)
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("All users were saved successfully.", "No errors", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("All users were saved successfully.", "No errors", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             
@@ -310,7 +308,7 @@ namespace InSalute.ViewModel
             bool skipReload = false;
             if (EditedUsers.Count > 0 || UsersList.Any(user => user.Id == 0))
             {
-                MessageBoxResult result = Xceed.Wpf.Toolkit.MessageBox.Show("You have unsaved edits, do you really want to reload your users and lose your changes?", "Pending changes", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                MessageBoxResult result = MessageBox.Show("You have unsaved edits, do you really want to reload your users and lose your changes?", "Pending changes", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (result == MessageBoxResult.Yes)
                 {
                     skipReload = true;
@@ -333,7 +331,7 @@ namespace InSalute.ViewModel
             }
             catch (Exception ex)
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -357,7 +355,7 @@ namespace InSalute.ViewModel
             }
             else
             {
-                Xceed.Wpf.Toolkit.MessageBox.Show("Could not refresh users.\nError: " + userDetails.Result.StatusCode, "Could not refresh", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Could not refresh users.\nError: " + userDetails.Result.StatusCode, "Could not refresh", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

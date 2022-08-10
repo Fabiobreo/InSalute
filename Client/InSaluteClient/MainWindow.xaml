@@ -7,7 +7,7 @@
         xmlns:viewmodels="clr-namespace:InSalute.ViewModel"
         xmlns:modalcontrols="clr-namespace:MVVMEssentials.ViewModels;assembly=MVVMEssentials" xmlns:modalcontrol="clr-namespace:ModalControl;assembly=ModalControl"
         mc:Ignorable="d"
-        Title="InSalute" Height="675" Width="1000" MinHeight="675" MinWidth="1000" WindowStartupLocation="CenterScreen">
+        Title="InSalute" Height="1000" Width="1400" MinHeight="1000" MinWidth="1400" WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.Resources>
             <DataTemplate DataType="{x:Type viewmodels:HomeViewModel}">
@@ -18,9 +18,6 @@
             </DataTemplate>
             <DataTemplate DataType="{x:Type viewmodels:LoginViewModel}">
                 <views:LoginView />
-            </DataTemplate>
-            <DataTemplate DataType="{x:Type viewmodels:FilterViewModel}">
-                <views:FilterView />
             </DataTemplate>
             <DataTemplate DataType="{x:Type viewmodels:UserViewModel}">
                 <views:UserView />

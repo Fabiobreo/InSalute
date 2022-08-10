@@ -1,0 +1,759 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>InSalute Server</title>
+    <style type="text/css">
+        body {
+            font-family: Trebuchet MS, sans-serif;
+            font-size: 15px;
+            color: #444;
+            margin-right: 24px;
+        }
+
+        h1 {
+            font-size: 25px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        hr {
+            height: 1px;
+            border: 0;
+            color: #ddd;
+            background-color: #ddd;
+        }
+
+        .app-desc {
+            clear: both;
+            margin-left: 20px;
+        }
+
+        .param-name {
+            width: 100%;
+        }
+
+        .license-info {
+            margin-left: 20px;
+        }
+
+        .license-url {
+            margin-left: 20px;
+        }
+
+        .model {
+            margin: 0 0 0px 20px;
+        }
+
+        .method {
+            margin-left: 20px;
+        }
+
+        .method-notes {
+            margin: 10px 0 20px 0;
+            font-size: 90%;
+            color: #555;
+        }
+
+        pre {
+            padding: 10px;
+            margin-bottom: 2px;
+        }
+
+        .http-method {
+            text-transform: uppercase;
+        }
+
+        pre.get {
+            background-color: #0f6ab4;
+        }
+
+        pre.post {
+            background-color: #10a54a;
+        }
+
+        pre.put {
+            background-color: #c5862b;
+        }
+
+        pre.delete {
+            background-color: #a41e22;
+        }
+
+        .huge {
+            color: #fff;
+        }
+
+        pre.example {
+            background-color: #f3f3f3;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        code {
+            white-space: pre;
+        }
+
+        .nickname {
+            font-weight: bold;
+        }
+
+        .method-path {
+            font-size: 1.5em;
+            background-color: #0f6ab4;
+        }
+
+        .up {
+            float: right;
+        }
+
+        .parameter {
+            width: 500px;
+        }
+
+        .param {
+            width: 500px;
+            padding: 10px 0 0 20px;
+            font-weight: bold;
+        }
+
+        .param-desc {
+            width: 700px;
+            padding: 0 0 0 20px;
+            color: #777;
+        }
+
+        .param-type {
+            font-style: italic;
+        }
+
+        .param-enum-header {
+            width: 700px;
+            padding: 0 0 0 60px;
+            color: #777;
+            font-weight: bold;
+        }
+
+        .param-enum {
+            width: 700px;
+            padding: 0 0 0 80px;
+            color: #777;
+            font-style: italic;
+        }
+
+        .field-label {
+            padding: 0;
+            margin: 0;
+            clear: both;
+        }
+
+        .field-items {
+            padding: 0 0 15px 0;
+            margin-bottom: 15px;
+        }
+
+        .return-type {
+            clear: both;
+            padding-bottom: 10px;
+        }
+
+        .param-header {
+            font-weight: bold;
+        }
+
+        .method-tags {
+            text-align: right;
+        }
+
+        .method-tag {
+            background: none repeat scroll 0% 0% #24A600;
+            border-radius: 3px;
+            padding: 2px 10px;
+            margin: 2px;
+            color: #FFF;
+            display: inline-block;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h2></h2>
+    <div class="app-desc">This is the server for InSalute</div>
+    <div class="app-desc">Contact Info: <a href="fabio.brea@gmail.com">fabio.brea@gmail.com</a></div>
+    <div class="app-desc">Version: 1.0.0</div>
+    <div class="app-desc">BasePath:/api</div>
+    <div class="license-info">All rights reserved</div>
+    <h2>Access</h2>
+
+    <h2><a name="__Methods">Methods</a></h2>
+    [ Jump to <a href="#__Models">Models</a> ]
+
+    <h3>Table of Contents </h3>
+    <div class="method-summary"></div>
+    <h4><a href="#log">Log</a></h4>
+    <ul>
+        <li><a href="#deleteLog"><code><span class="http-method">delete</span> /log</code></a></li>
+        <li><a href="#getlogs"><code><span class="http-method">get</span> /log</code></a></li>
+    </ul>
+    <h4><a href="#Login">Login</a></h4>
+    <ul>
+        <li><a href="#login"><code><span class="http-method">get</span> /login</code></a></li>
+    </ul>
+    <h4><a href="#User">User</a></h4>
+    <ul>
+        <li><a href="#createUser"><code><span class="http-method">post</span> /user</code></a></li>
+        <li><a href="#deleteUser"><code><span class="http-method">delete</span> /user</code></a></li>
+        <li><a href="#getUserById"><code><span class="http-method">get</span> /user/{id}</code></a></li>
+        <li><a href="#getUsers"><code><span class="http-method">get</span> /user</code></a></li>
+        <li><a href="#registerUser"><code><span class="http-method">post</span> /user/register</code></a></li>
+        <li><a href="#updateUser"><code><span class="http-method">put</span> /user</code></a></li>
+    </ul>
+
+    <h1><a name="Log">Log</a></h1>
+    <div class="method">
+        <a name="createLog" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="post"><code class="huge"><span class="http-method">post</span> /log</code></pre>
+        </div>
+        <div class="method-summary">Create an log (<span class="nickname">createlog</span>)</div>
+        <div class="method-notes">This can only be done by the logged in manager/admin.</div>
+
+
+
+        <h3 class="field-label">Request body</h3>
+        <div class="field-items">
+            <div class="param">log <a href="#log">log</a> (required)</div>
+
+            <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash; User that needs to be updated </div>
+
+        </div>  <!-- field-items -->
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">201</h4>
+        Created
+        <a href="#"></a>
+        <h4 class="field-label">400</h4>
+        Bad request
+        <a href="#"></a>
+        <h4 class="field-label">404</h4>
+        Not found
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+        <a name="deleteLog" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="delete"><code class="huge"><span class="http-method">delete</span> /log</code></pre>
+        </div>
+        <div class="method-summary">Delete a log (<span class="nickname">deleteLog</span>)</div>
+        <div class="method-notes">This can only be done by the logged in user.</div>
+
+
+
+
+
+        <h3 class="field-label">Query parameters</h3>
+        <div class="field-items">
+            <div class="param">id (required)</div>
+
+            <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; The id of the log that needs to be deleted format: int64</div>
+        </div>  <!-- field-items -->
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">200</h4>
+        Request successful
+        <a href="#"></a>
+        <h4 class="field-label">400</h4>
+        Bad request
+        <a href="#"></a>
+        <h4 class="field-label">401</h4>
+        Not authorized
+        <a href="#"></a>
+        <h4 class="field-label">404</h4>
+        User not found
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+        <a name="getlogs" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="get"><code class="huge"><span class="http-method">get</span> /log</code></pre>
+        </div>
+        <div class="method-summary">Get logs (<span class="nickname">getlogs</span>)</div>
+        <div class="method-notes">Get logs with possible filters. This can only be done by logged in users.</div>
+
+
+
+
+
+        <h3 class="field-label">Query parameters</h3>
+        <div class="field-items">
+            <div class="param">MinAmount (optional)</div>
+
+            <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; From date of the logs that will be retrieved format: datetime</div><div class="param">ToDate (optional)</div>
+
+            <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; To date of the logs that will be retrieved format: datetime</div>
+        </div>  <!-- field-items -->
+
+
+        <h3 class="field-label">Return type</h3>
+        <div class="return-type">
+
+        </div>
+
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+        <h3 class="field-label">Example data</h3>
+        <div class="example-data-content-type">Content-Type: application/json</div>
+        <pre class="example"><code>{}</code></pre>
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">200</h4>
+        Successful operation
+
+        <h4 class="field-label">400</h4>
+        Bad request
+        <a href="#"></a>
+        <h4 class="field-label">404</h4>
+        Not found
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+    <hr />
+    <h1><a name="Login">Login</a></h1>
+    <div class="method">
+        <a name="login" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="get"><code class="huge"><span class="http-method">get</span> /login</code></pre>
+        </div>
+        <div class="method-summary">Login a user (<span class="nickname">login</span>)</div>
+        <div class="method-notes">Login a user</div>
+
+        <h3 class="field-label">Query parameters</h3>
+        <div class="field-items">
+            <div class="param">username (required)</div>
+
+            <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; username of the user that need to login </div><div class="param">password (required)</div>
+
+            <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; Password of the user that need to login (Base64 encoded) </div>
+        </div>  <!-- field-items -->
+
+
+        <h3 class="field-label">Return type</h3>
+        <div class="return-type">
+            <a href="#LoggedUser">LoggedUser</a>
+
+        </div>
+
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+        <h3 class="field-label">Example data</h3>
+        <div class="example-data-content-type">Content-Type: application/json</div>
+        <pre class="example"><code>{"empty": false}</code></pre>
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">200</h4>
+        Successful operation
+        <a href="#LoggedUser">LoggedUser</a>
+        <h4 class="field-label">404</h4>
+        Not found
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <h1><a name="User">User</a></h1>
+    <div class="method">
+        <a name="createUser" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="post"><code class="huge"><span class="http-method">post</span> /user</code></pre>
+        </div>
+        <div class="method-summary">Create a user (<span class="nickname">createUser</span>)</div>
+        <div class="method-notes">This can only be done by the logged in manager/admin.</div>
+
+
+
+        <h3 class="field-label">Request body</h3>
+        <div class="field-items">
+            <div class="param">user <a href="#User">User</a> (required)</div>
+
+            <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash; User that needs to be updated </div>
+
+        </div>  <!-- field-items -->
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">201</h4>
+        Created
+        <a href="#"></a>
+        <h4 class="field-label">400</h4>
+        Bad request
+        <a href="#"></a>
+        <h4 class="field-label">409</h4>
+        Conflict
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+        <a name="deleteUser" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="delete"><code class="huge"><span class="http-method">delete</span> /user</code></pre>
+        </div>
+        <div class="method-summary">Delete user (<span class="nickname">deleteUser</span>)</div>
+        <div class="method-notes">This can only be done by the logged in user.</div>
+
+        <h3 class="field-label">Query parameters</h3>
+        <div class="field-items">
+            <div class="param">id (required)</div>
+
+            <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; The id of the user that needs to be deleted format: int64</div>
+        </div>  <!-- field-items -->
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">200</h4>
+        Request successful
+        <a href="#"></a>
+        <h4 class="field-label">400</h4>
+        Bad request
+        <a href="#"></a>
+        <h4 class="field-label">401</h4>
+        Not authorized
+        <a href="#"></a>
+        <h4 class="field-label">404</h4>
+        User not found
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+        <a name="getUserById" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="get"><code class="huge"><span class="http-method">get</span> /user/{id}</code></pre>
+        </div>
+        <div class="method-summary">Find a user by id (<span class="nickname">getUserById</span>)</div>
+        <div class="method-notes">For valid response try integer IDs with value &gt;= 1. This can only be done by logged in users.</div>
+
+        <h3 class="field-label">Path parameters</h3>
+        <div class="field-items">
+            <div class="param">id (required)</div>
+
+            <div class="param-desc"><span class="param-type">Path Parameter</span> &mdash; ID of user that needs to be fetched format: int64</div>
+        </div>  <!-- field-items -->
+
+
+
+
+
+
+        <h3 class="field-label">Return type</h3>
+        <div class="return-type">
+            <a href="#User">User</a>
+
+        </div>
+
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+        <h3 class="field-label">Example data</h3>
+        <div class="example-data-content-type">Content-Type: application/json</div>
+        <pre class="example"><code>{"empty": false}</code></pre>
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">200</h4>
+        successful operation
+        <a href="#User">User</a>
+        <h4 class="field-label">400</h4>
+        Bad Request
+        <a href="#"></a>
+        <h4 class="field-label">404</h4>
+        Not found
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+        <a name="getUsers" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="get"><code class="huge"><span class="http-method">get</span> /user</code></pre>
+        </div>
+        <div class="method-summary">Get users (<span class="nickname">getUsers</span>)</div>
+        <div class="method-notes">This can only be done by the logged in manager/admin.</div>
+
+
+
+
+
+
+
+        <h3 class="field-label">Return type</h3>
+        <div class="return-type">
+            array[<a href="#User">User</a>]
+
+        </div>
+
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+        <h3 class="field-label">Example data</h3>
+        <div class="example-data-content-type">Content-Type: application/json</div>
+        <pre class="example"><code>{}</code></pre>
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">200</h4>
+        Successful operation
+
+        <h4 class="field-label">400</h4>
+        Bad Request
+        <a href="#"></a>
+        <h4 class="field-label">404</h4>
+        Not found
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+        <a name="registerUser" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="post"><code class="huge"><span class="http-method">post</span> /user/register</code></pre>
+        </div>
+        <div class="method-summary">Register a new user (<span class="nickname">registerUser</span>)</div>
+        <div class="method-notes">Register a new user</div>
+
+
+        <h3 class="field-label">Consumes</h3>
+        This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Request body</h3>
+        <div class="field-items">
+            <div class="param">body <a href="#User">User</a> (required)</div>
+
+            <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash; User object that will be added </div>
+
+        </div>  <!-- field-items -->
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">201</h4>
+        Created
+        <a href="#"></a>
+        <h4 class="field-label">400</h4>
+        Bad request
+        <a href="#"></a>
+        <h4 class="field-label">409</h4>
+        Conflict
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+    <div class="method">
+        <a name="updateUser" />
+        <div class="method-path">
+            <a class="up" href="#__Methods">Up</a>
+            <pre class="put"><code class="huge"><span class="http-method">put</span> /user</code></pre>
+        </div>
+        <div class="method-summary">Update a user (<span class="nickname">updateUser</span>)</div>
+        <div class="method-notes">This can only be done by the logged in user.</div>
+
+
+
+        <h3 class="field-label">Request body</h3>
+        <div class="field-items">
+            <div class="param">user <a href="#User">User</a> (required)</div>
+
+            <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash; Updated user object </div>
+
+        </div>  <!-- field-items -->
+
+
+        <h3 class="field-label">Query parameters</h3>
+        <div class="field-items">
+            <div class="param">id (required)</div>
+
+            <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; Id of the user that need to be updated format: int64</div>
+        </div>  <!-- field-items -->
+        <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+        <h3 class="field-label">Produces</h3>
+        This API call produces the following media types according to the <span class="header">Accept</span> request header;
+        the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+        <ul>
+            <li><code>application/json</code></li>
+        </ul>
+
+        <h3 class="field-label">Responses</h3>
+        <h4 class="field-label">200</h4>
+        Request successful
+        <a href="#"></a>
+        <h4 class="field-label">400</h4>
+        Bad request
+        <a href="#"></a>
+        <h4 class="field-label">401</h4>
+        Not authorized
+        <a href="#"></a>
+        <h4 class="field-label">404</h4>
+        Not found
+        <a href="#"></a>
+        <h4 class="field-label">409</h4>
+        Conflict
+        <a href="#"></a>
+    </div> <!-- method -->
+    <hr />
+
+    <h2><a name="__Models">Models</a></h2>
+    [ Jump to <a href="#__Methods">Methods</a> ]
+
+    <h3>Table of Contents</h3>
+    <ol>
+        <li><a href="#Log"><code>Log</code> - </a></li>
+        <li><a href="#LoggedUser"><code>LoggedUser</code> - </a></li>
+        <li><a href="#User"><code>User</code> - </a></li>
+        <li><a href="#Userlogs"><code>Userlogs</code> - </a></li>
+        <li><a href="#Weeklylog"><code>Weeklylog</code> - </a></li>
+    </ol>
+
+    <div class="model">
+        <h3><a name="log"><code>log</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+        <div class='model-description'></div>
+        <div class="field-items">
+            <div class="param">id (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+            <div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  format: int64</div>
+            <div class="param">amount (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: decimal</div>
+            <div class="param">comment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param">date (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  format: datetime</div>
+            <div class="param">time (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  format: datetime</div>
+            <div class="param">user_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+        </div>  <!-- field-items -->
+    </div>
+    <div class="model">
+        <h3><a name="LoggedUser"><code>LoggedUser</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+        <div class='model-description'></div>
+        <div class="field-items">
+            <div class="param">Id (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+            <div class="param">username (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param">Username (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param">CreationDate (optional)</div><div class="param-desc"><span class="param-type"><a href="#DateTime">Date</a></span>  format: date-time</div>
+            <div class="param">Role (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param-enum-header">Enum:</div>
+            <div class="param-enum">user</div><div class="param-enum">manager</div><div class="param-enum">admin</div>
+            <div class="param">Token (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param">Status (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+        </div>  <!-- field-items -->
+    </div>
+    <div class="model">
+        <h3><a name="User"><code>User</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+        <div class='model-description'></div>
+        <div class="field-items">
+            <div class="param">id (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+            <div class="param">username (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param">username (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param">password (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param">creation_date (optional)</div><div class="param-desc"><span class="param-type"><a href="#DateTime">Date</a></span>  format: date-time</div>
+            <div class="param">role (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+            <div class="param-enum-header">Enum:</div>
+            <div class="param-enum">user</div><div class="param-enum">manager</div><div class="param-enum">admin</div>
+        </div>  <!-- field-items -->
+    </div>
+    <div class="model">
+        <h3><a name="Userlogs"><code>Userlogs</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+        <div class='model-description'></div>
+        <div class="field-items">
+            <div class="param">UserId (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+            <div class="param">Weeklylogs (optional)</div><div class="param-desc"><span class="param-type"><a href="#Weeklylog">array[Weeklylog]</a></span>  </div>
+        </div>  <!-- field-items -->
+    </div>
+    <div class="model">
+        <h3><a name="Weeklylog"><code>Weeklylog</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+        <div class='model-description'></div>
+        <div class="field-items">
+            <div class="param">WeeksAgo (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  </div>
+            <div class="param">logs (optional)</div><div class="param-desc"><span class="param-type"><a href="#log">array[log]</a></span>  </div>
+            <div class="param">Total (optional)</div><div class="param-desc"><span class="param-type"><a href="#number">BigDecimal</a></span>  format: decimal</div>
+            <div class="param">AvgDaily (optional)</div><div class="param-desc"><span class="param-type"><a href="#double">Double</a></span>  format: double</div>
+            <div class="param">UserId (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+        </div>  <!-- field-items -->
+    </div>
+</body>
+</html>

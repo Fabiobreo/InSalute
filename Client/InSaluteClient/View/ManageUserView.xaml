@@ -16,15 +16,15 @@
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="40"/>
+            <RowDefinition Height="50"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <ContentControl Visibility="Collapsed" Content="{StaticResource ProxyElement}"/>
 
-        <StackPanel Grid.Row="0" Grid.Column="0" Background="#0099ff" VerticalAlignment="Center" Margin="6 6 6 0" >
-            <Label Content="Manage Users" Foreground="#FFFFFF" FontWeight="Bold" FontSize="20" VerticalAlignment="Top"/>
+        <StackPanel Grid.Row="0" Grid.Column="0" Background="{StaticResource ThemeMainColor}" VerticalAlignment="Center" Margin="6 6 6 0" >
+            <Label Content="Manage Users" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         </StackPanel>
 
         <DataGrid Grid.Row="2" Grid.Column="0" Margin="6 0 6 6" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="False" ItemsSource="{ Binding UsersCollection.View }" Background="White">
@@ -84,7 +84,7 @@
         </DockPanel>
         
         <DockPanel Grid.Row="3" Height="40" LastChildFill="False" Margin="0 12 0 12">
-            <Button DockPanel.Dock="Right" Grid.ColumnSpan="4" Width="100" Content="Close" Style="{ StaticResource btnSmall }" Command="{Binding CloseManageUserCommand}"/>
+            <Button DockPanel.Dock="Right" Grid.ColumnSpan="4" Width="100" Content="Close" Style="{StaticResource ButtonStyle}" Command="{Binding CloseManageUserCommand}"/>
         </DockPanel>
     </Grid>
 </UserControl>

@@ -17,7 +17,7 @@
             <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        
+
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="65"/>
@@ -26,14 +26,14 @@
         </Grid.RowDefinitions>
 
         <!-- HEADER -->
-        <Border x:Name="LoginHeaderBorder" Grid.Row="1" Grid.Column="1" Background="#3375b0" CornerRadius="8 8 0 0" BorderBrush="#0099ff" BorderThickness="0">
-            <Label x:Name="LoginTitle" Content="LOGIN" Style="{ StaticResource lblTitle }"/>
+        <Border x:Name="LoginHeaderBorder" Grid.Row="1" Grid.Column="1" Background="{StaticResource ThemeMainColor}" CornerRadius="8 8 0 0" BorderThickness="0">
+            <Label x:Name="LoginTitle" Content="LOGIN" Style="{StaticResource LabelTitle}"/>
         </Border>
 
         <!-- HEADER -->
 
         <!-- CONTENT -->
-        <Border Grid.Row="2" Grid.Column="1" Background="#FFFFFF" CornerRadius="0 0 8 8" BorderBrush="#0099ff" BorderThickness="0">
+        <Border Grid.Row="2" Grid.Column="1" Background="#FFFFFF" CornerRadius="0 0 8 8" >
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -41,24 +41,22 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
-                
-                <StackPanel x:Name="LoginStackPanel" Grid.Row="0" Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" Visibility="{Binding ShowLoginStackPanel, 
-            Converter={StaticResource booleanVisibilityConverter}}">
-                    <Label Content="Username" Foreground="#88939D" FontSize="15" FontWeight="Medium" Margin="16 0 16 4" Padding="0,5,5,5"/>
-                    <TextBox TabIndex="0" x:Name="EmailLoginTextBox" Text="{Binding LoginEmail}" Style="{ StaticResource txtFlat }" />
 
-                    <Label Content="Password" Foreground="#88939D" FontSize="15" FontWeight="Medium" Margin="16, 16, 16, 4" Padding="0,5,5,5"/>
-                    <PasswordBox TabIndex="1" x:Name="PasswordLoginPasswordBox" utils:PasswordHelper.Attach="true"
-                                 utils:PasswordHelper.Password="{Binding Path=LoginPassword,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}" Style="{ StaticResource pwdFlat }" />
+                <StackPanel x:Name="LoginStackPanel" Grid.Row="0" Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                    <Label Content="Username" Style="{StaticResource LabelStyle}" Foreground="#88939D" Margin="16 0"/>
+                    <TextBox TabIndex="0" x:Name="EmailLoginTextBox" Text="{Binding LoginUserName}" Style="{StaticResource TextBoxStyle}" Margin="16 0"/>
+
+                    <Label Content="Password" Style="{StaticResource LabelStyle}" Foreground="#88939D" Margin="16 24 6 0"/>
+                    <PasswordBox TabIndex="1" x:Name="PasswordLoginPasswordBox" utils:PasswordHelper.Attach="true"  Margin="16 0"
+                                 utils:PasswordHelper.Password="{Binding Path=LoginPassword,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}" Style="{StaticResource PasswordBoxStyle}" />
 
                 </StackPanel>
-                
-                <Button x:Name="LoginButton" Grid.Row="1" Grid.Column="0" Content="Login" Command="{Binding LoginButtonClicked}" Style="{ StaticResource btnSmall }" Margin="16 0 16 2" Visibility="{Binding ShowLoginButton, 
-            Converter={StaticResource booleanVisibilityConverter}}"  IsDefault="{Binding IsDefaultLogin}"/>
+
+                <Button x:Name="LoginButton" Grid.Row="1" Grid.Column="0" Content="Login" Command="{Binding LoginButtonClicked}" Style="{StaticResource ButtonStyle}" Margin="16 0 16 2" Width="180" IsDefault="{Binding IsDefaultLogin}"/>
 
 
                 <Label Grid.Row="3" Grid.Column="0" Content="Poliambulatorio InSalute © 2022" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"
-                    FontWeight="Light" Margin="16 6" Foreground="#88939D"/>
+                    FontWeight="Light" Margin="16 6" FontSize="10" Foreground="#88939D" Style="{StaticResource LabelStyle}"/>
             </Grid>
         </Border>
     </Grid>

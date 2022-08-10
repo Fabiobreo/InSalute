@@ -12,7 +12,7 @@ namespace InSalute.ViewModel
         public ICommand NavigateMainCommand { get; }
         public ICommand NavigateLoginCommand { get; }
 
-        private UserStore m_userStore;
+        private readonly UserStore m_userStore;
 
         public HomeViewModel(UserStore userStore, INavigationService loginNavigationService, INavigationService mainService)
         {
@@ -21,12 +21,12 @@ namespace InSalute.ViewModel
             NavigateLoginCommand = new NavigateCommand(loginNavigationService);
             NavigateLoginCommand.Execute(null);
 
-            m_userStore.CurrentUserChanged += UserStore_CurrentUserChanged;
+            m_userStore.CurrentUserChanged += HomeViewModel_CurrentUserChanged;
         }
 
-        private void UserStore_CurrentUserChanged()
+        private void HomeViewModel_CurrentUserChanged()
         {
-            m_userStore.CurrentUserChanged -= UserStore_CurrentUserChanged;
+            m_userStore.CurrentUserChanged -= HomeViewModel_CurrentUserChanged;
             NavigateMainCommand.Execute(null);
         }
     }

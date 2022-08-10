@@ -4,3 +4,9 @@ Client/.vs/
 Client/InSaluteClient/bin/
 
 Client/InSaluteClient/obj/
+Server/DataAccessLayer/bin/
+Server/DataAccessLayer/obj/Debug/.NETFramework,Version=v4.7.2.AssemblyAttributes.cs
+Server/DataAccessLayer/obj/
+Server/packages/
+Server/REST_API/bin/
+Server/REST_API/obj/

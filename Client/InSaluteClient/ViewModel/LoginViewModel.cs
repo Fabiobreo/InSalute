@@ -83,7 +83,7 @@ namespace InSalute.ViewModel
         #endregion
 
         #region Store and services
-        private UserStore UserStore;
+        private readonly UserStore UserStore;
         #endregion
 
         public LoginViewModel(UserStore userStore, INavigationService closeModalService)
@@ -95,57 +95,47 @@ namespace InSalute.ViewModel
 
         private void LoginUser()
         {
-            //if (!string.IsNullOrWhiteSpace(LoginUserName) && !string.IsNullOrWhiteSpace(LoginPassword))
-            //{
-            //    Dictionary<string, string> parameters = new Dictionary<string, string>()
-            //    {
-            //        ["email"] = LoginUserName,
-            //        ["password"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(LoginPassword))
-            //    };
-            //
-            //    Task<HttpResponseMessage> userDetails;
-            //    try
-            //    {
-            //        userDetails = WebAPI.GetCall(API_URIs.login, parameters, "");
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Xceed.Wpf.Toolkit.MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
-            //        return;
-            //    }
-            //
-            //    if (userDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
-            //    {
-            //        UserExtended user = userDetails.Result.Content.ReadAsAsync<UserExtended>().Result;
-            //        if (user != null)
-            //        {
-            //            UserStore.CurrentUser = user;
-            //            CloseLoginCommand.Execute(null);
-            //        }
-            //        else
-            //        {
-            //            Xceed.Wpf.Toolkit.MessageBox.Show("There was an error retrieving the user information.", "Retrieving error", MessageBoxButton.OK, MessageBoxImage.Error);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        Xceed.Wpf.Toolkit.MessageBox.Show("The login failed with error: " + userDetails.Result.StatusCode + "\nPlease retry.", "Something went wrong", MessageBoxButton.OK, MessageBoxImage.Error);
-            //    }
-            //}
-            //else
-            //{
-            //    Xceed.Wpf.Toolkit.MessageBox.Show("Please fill the form before clicking the Login button.", "Empty fields", MessageBoxButton.OK, MessageBoxImage.Error);
-            //}
-            UserStore.CurrentUser = new UserExtended
+            if (!string.IsNullOrWhiteSpace(LoginUserName) && !string.IsNullOrWhiteSpace(LoginPassword))
             {
-                Id = 1,
-                Email = "",
-                Username = "Test",
-                Password = "Test",
-                CreationDate = new DateTime(2022, 01, 01),
-                Role = "Developer"
-            };
-            CloseLoginCommand.Execute(null);
+                Dictionary<string, string> parameters = new Dictionary<string, string>()
+                {
+                    ["username"] = LoginUserName,
+                    ["password"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(LoginPassword))
+                };
+            
+                Task<HttpResponseMessage> userDetails;
+                try
+                {
+                    userDetails = WebAPI.GetCall(API_URIs.login, parameters, "");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            
+                if (userDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    UserExtended user = userDetails.Result.Content.ReadAsAsync<UserExtended>().Result;
+                    if (user != null)
+                    {
+                        UserStore.CurrentUser = user;
+                        CloseLoginCommand.Execute(null);
+                    }
+                    else
+                    {
+                        MessageBox.Show("There was an error retrieving the user information.", "Retrieving error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("The login failed with error: " + userDetails.Result.StatusCode + "\nPlease retry.", "Something went wrong", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please fill the form before clicking the Login button.", "Empty fields", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

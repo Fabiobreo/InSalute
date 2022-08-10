@@ -44,17 +44,6 @@ namespace InSalute
                 _userStore = value;
             }
         }
-
-        private FilterStore _filterStore;
-
-        public FilterStore FilterStore
-        {
-            get => _filterStore;
-            set
-            {
-                _filterStore = value;
-            }
-        }
         #endregion Store objects
 
         public bool IsOpen => ModalNavigationStore.IsOpen;
@@ -64,7 +53,6 @@ namespace InSalute
             NavigationStore = new NavigationStore();
             ModalNavigationStore = new ModalNavigationStore();
             UserStore = new UserStore();
-            FilterStore = new FilterStore();
         }
 
         protected override void OnStartup(StartupEventArgs e)
@@ -101,9 +89,8 @@ namespace InSalute
         
         private CoreViewModel CreateExpensesViewModel()
         {
-            return new CoreViewModel(UserStore, FilterStore, CreateHomeNavigationService(),
-                CreateLoginNavigationService(), CreateFilterNavigationService(),
-                CreateUserNavigationService(), CreateManageUserNavigationService());
+            return new CoreViewModel(UserStore, CreateHomeNavigationService(),
+                CreateLoginNavigationService(), CreateUserNavigationService(), CreateManageUserNavigationService());
         }
         #endregion Create ExpensesView
 
@@ -118,18 +105,6 @@ namespace InSalute
             return new LoginViewModel(UserStore, new CloseModalNavigationService(ModalNavigationStore));
         }
         #endregion Create LoginView
-
-        #region Create FilterView
-        private INavigationService CreateFilterNavigationService()
-        {
-            return new NavigationService<FilterViewModel>(ModalNavigationStore, CreateFilterViewModel);
-        }
-
-        private FilterViewModel CreateFilterViewModel()
-        {
-            return new FilterViewModel(FilterStore, new CloseModalNavigationService(ModalNavigationStore));
-        }
-        #endregion Create FilterView
 
         #region Create UserView
         private INavigationService CreateUserNavigationService()

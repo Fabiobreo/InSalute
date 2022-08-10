@@ -129,7 +129,6 @@ namespace InSalute.Models
         public UserExtended(Users user)
         {
             Id = user.id;
-            Email = user.email;
             Username = user.username;
             Password = user.password;
             CreationDate = user.creation_date;
