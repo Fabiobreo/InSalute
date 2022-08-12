@@ -10,3 +10,6 @@ Server/DataAccessLayer/obj/
 Server/packages/
 Server/REST_API/bin/
 Server/REST_API/obj/
+Server/BusinessLogic/obj/
+Server/BusinessLogic/bin/
+Server/.vs/

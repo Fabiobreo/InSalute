@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31515.178
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "REST_API", "REST_API\REST_API.csproj", "{39C1A2CC-1122-484C-B107-A0F90E5167B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccessLayer", "DataAccessLayer\DataAccessLayer.csproj", "{589F8F37-2B81-4140-8D42-9DD8F8A0D82A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessLogic", "BusinessLogic\BusinessLogic.csproj", "{2EE7F54F-0890-4015-AC08-54E4C3FA43D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{39C1A2CC-1122-484C-B107-A0F90E5167B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39C1A2CC-1122-484C-B107-A0F90E5167B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39C1A2CC-1122-484C-B107-A0F90E5167B6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{589F8F37-2B81-4140-8D42-9DD8F8A0D82A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{589F8F37-2B81-4140-8D42-9DD8F8A0D82A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{589F8F37-2B81-4140-8D42-9DD8F8A0D82A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{589F8F37-2B81-4140-8D42-9DD8F8A0D82A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EE7F54F-0890-4015-AC08-54E4C3FA43D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EE7F54F-0890-4015-AC08-54E4C3FA43D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EE7F54F-0890-4015-AC08-54E4C3FA43D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EE7F54F-0890-4015-AC08-54E4C3FA43D7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

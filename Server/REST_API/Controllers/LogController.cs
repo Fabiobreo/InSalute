@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using REST_API.Models;
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     IPrincipal principal = Thread.CurrentPrincipal;
                     if (!principal.IsInRole("admin"))
@@ -67,7 +67,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     #region ids maps
                     HashSet<long> ids = new HashSet<long>();

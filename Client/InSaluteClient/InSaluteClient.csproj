@@ -34,8 +34,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="DataAccessLayer">
-      <HintPath>Lib\DataAccessLayer.dll</HintPath>
+    <Reference Include="BusinessLogic">
+      <HintPath>Lib\BusinessLogic.dll</HintPath>
     </Reference>
   </ItemGroup>
 

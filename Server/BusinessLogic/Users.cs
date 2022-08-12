@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DataAccessLayer
+namespace BusinessLogic
 {
     using System;
     using System.Collections.Generic;
@@ -21,6 +21,7 @@ namespace DataAccessLayer
         }
     
         public long id { get; set; }
+        public string email { get; set; }
         public string username { get; set; }
         public string password { get; set; }
         public System.DateTime creation_date { get; set; }

@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DataAccessLayer
+namespace BusinessLogic
 {
     using System;
     using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using REST_API.Models;
 using System;
 using System.Collections.Generic;
@@ -28,7 +28,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.FirstOrDefault(us => us.id == id);
                     if (user != null)
@@ -59,7 +59,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.FirstOrDefault(us => us.username == username);
                     if (user != null)
@@ -129,7 +129,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var principal = Thread.CurrentPrincipal;
                     List<dynamic> users = new List<dynamic>();
@@ -206,7 +206,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     #region ids and emails maps
                     HashSet<long> ids = new HashSet<long>();
@@ -316,7 +316,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     Users user = entities.Users.Where(us => us.id == id).FirstOrDefault();
                     if (user != null)
@@ -348,7 +348,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     Users user = entities.Users.Where(us => us.username == username).FirstOrDefault();
                     if (user != null)
@@ -374,7 +374,7 @@ namespace REST_API.Controllers
         /// <param name="edited_user">The new details of the user</param>
         /// <param name="user_to_edit">The user to edit</param>
         /// <returns>Id, Email and status of the request, if successfull.</returns>
-        private HttpResponseMessage Put(DatabaseEntities entities, Users edited_user, Users user_to_edit)
+        private HttpResponseMessage Put(InSaluteEntities entities, Users edited_user, Users user_to_edit)
         {
             string errorMessage = "";
             IPrincipal principal = Thread.CurrentPrincipal;
@@ -480,7 +480,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.Where(us => us.id == id).FirstOrDefault();
                     if (user != null)
@@ -511,7 +511,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.Where(us => us.username == username).FirstOrDefault();
                     if (user != null)
@@ -536,7 +536,7 @@ namespace REST_API.Controllers
         /// <param name="entities">The database entities</param>
         /// <param name="user">The user to delete</param>
         /// <returns></returns>
-        private HttpResponseMessage Delete(DatabaseEntities entities, Users user)
+        private HttpResponseMessage Delete(InSaluteEntities entities, Users user)
         {
             IPrincipal principal = Thread.CurrentPrincipal;
             if (principal.IsInRole("manager"))

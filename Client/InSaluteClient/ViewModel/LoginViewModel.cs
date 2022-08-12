@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using InSalute.Models;
 using InSalute.Stores;
 using InSalute.Utilities;
@@ -110,7 +110,7 @@ namespace InSalute.ViewModel
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
             
@@ -124,17 +124,21 @@ namespace InSalute.ViewModel
                     }
                     else
                     {
-                        MessageBox.Show("There was an error retrieving the user information.", "Retrieving error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("Si è verificato un errore durante il recupero delle informazioni sull'utente.", "Errore recupero informazioni", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
+                }
+                else if (userDetails.Result.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    MessageBox.Show("Email/username o password non sono corretti.\nPer favore, riprova.", "Login non riuscito", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 else
                 {
-                    MessageBox.Show("The login failed with error: " + userDetails.Result.StatusCode + "\nPlease retry.", "Something went wrong", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Il login è fallito con il seguente errore: " + userDetails.Result.StatusCode + "\nPer favore, riprova.", "Qualcosa è andato storto", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             else
             {
-                MessageBox.Show("Please fill the form before clicking the Login button.", "Empty fields", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Per favore, compila i campi vuoti prima di premere il pulsante di login.", "Campi vuoti", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }

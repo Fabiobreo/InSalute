@@ -8,7 +8,7 @@ using System.Threading;
 using System.Web;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
-using DataAccessLayer;
+using BusinessLogic;
 
 namespace REST_API.Models
 {

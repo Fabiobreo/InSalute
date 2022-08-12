@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

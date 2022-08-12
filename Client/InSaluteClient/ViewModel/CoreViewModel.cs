@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using InSalute.Models;
 using InSalute.Stores;
 using InSalute.Utilities;
