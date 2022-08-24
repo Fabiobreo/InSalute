@@ -30,7 +30,7 @@
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="{StaticResource ThemeMainColor}" Margin="0 0 0 6" >
-                <Label Content="User Profile" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <Label Content="Profilo Utente" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
             </DockPanel>
 
             <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Margin="0 0 0 12">
@@ -41,11 +41,11 @@
                         <Label Content="{Binding Id}" Style="{StaticResource LabelStyle}"/>
                     </WrapPanel>
                     <WrapPanel>
-                        <Label Content="Role:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
+                        <Label Content="Ruolo:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
                         <Label Content="{Binding Role}" Style="{StaticResource LabelStyle}"/>
                     </WrapPanel>
                     <WrapPanel>
-                        <Label Content="Creation Date:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
+                        <Label Content="Data di creazione:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
                         <Label Content="{Binding Date}" Style="{StaticResource LabelStyle}"/>
                     </WrapPanel>
                 </StackPanel>
@@ -54,7 +54,7 @@
             <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Content="Email" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
             <TextBox Style="{StaticResource TextBoxStyle}" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Text="{Binding Email}" MinWidth="300" MaxWidth="400" Margin="6 0" HorizontalAlignment="Center"/>
 
-            <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Content="Username" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
+            <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Content="Nome Utente" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
             <TextBox Style="{StaticResource TextBoxStyle}" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding Username}" MinWidth="200" Margin="6 0"/>
             <Label Grid.Row="4" Grid.Column="3" Grid.ColumnSpan="2" Content="Password" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
             <PasswordBox Grid.Row="5" Grid.Column="3" Grid.ColumnSpan="2" utils:PasswordHelper.Attach="true" MinWidth="200" ToolTip="Non conosciamo la tua password, usa questo campo solo per cambiare la tua." Margin="6 0"
@@ -64,8 +64,8 @@
         </Grid>
     
         <DockPanel Margin="18 18 18 6" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="5" DockPanel.Dock="Bottom" HorizontalAlignment="Center">
-            <Button Width="100" Content="Save" Style="{StaticResource ButtonStyle}" Command="{Binding SaveCommand}"/>
-            <Button Width="100" Content="Cancel" Style="{StaticResource ButtonStyle}" Command="{Binding CancelCommand}"/>
+            <Button Width="100" Content="Salva" Style="{StaticResource ButtonStyle}" Command="{Binding SaveCommand}"/>
+            <Button Width="100" Content="Cancella" Style="{StaticResource ButtonStyle}" Command="{Binding CancelCommand}"/>
         </DockPanel>
     </DockPanel>
 </UserControl>

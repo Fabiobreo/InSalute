@@ -294,6 +294,12 @@ namespace InSalute.ViewModel
 
             UserStore = userStore;
             ChangeUIForUser(UserStore.CurrentUser);
+            UserStore.CurrentUserUpdated += CoreViewModel_CurrentUserUpdated;
+        }
+
+        private void CoreViewModel_CurrentUserUpdated()
+        {
+            ChangeUIForUser(UserStore.CurrentUser);
         }
 
         private void SaveConfiguration()
@@ -312,8 +318,8 @@ namespace InSalute.ViewModel
                     mail = SenderEmail,
                     first_object = FirstObject,
                     second_object = SecondObject,
-                    first_text = GetContent(FirstEmail),
-                    second_text = GetContent(SecondEmail)
+                    first_text = GetContent(FirstEmail, false),
+                    second_text = GetContent(SecondEmail, false)
                 };
 
                 string jsonData = JsonConvert.SerializeObject(configs);
@@ -600,15 +606,18 @@ namespace InSalute.ViewModel
             }
         }
 
-        private string GetContent(string richText)
+        private string GetContent(string richText, bool replace = true)
         {
             XDocument doc = XDocument.Parse(richText);
             XElement paragraph = doc.Root.Descendants().First();
             string rawRichText = paragraph.Value;
-            rawRichText = rawRichText.Replace("{NOME}", ReceiverName);
-            rawRichText = rawRichText.Replace("{COGNOME}", ReceiverSurname);
-            string convertedText = rawRichText.Replace("{PASSWORD}", EncryptPassword);
-            return convertedText;
+            if (replace)
+            {
+                rawRichText = rawRichText.Replace("{NOME}", ReceiverName);
+                rawRichText = rawRichText.Replace("{COGNOME}", ReceiverSurname);
+                rawRichText = rawRichText.Replace("{PASSWORD}", EncryptPassword);
+            }
+            return rawRichText;
         }
 
         private string SecureFile(string filename)

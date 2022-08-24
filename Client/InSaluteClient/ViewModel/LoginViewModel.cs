@@ -5,6 +5,7 @@ using InSalute.Utilities;
 using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
 using MVVMEssentials.ViewModels;
+using NETCore.Encrypt;
 using Prism.Commands;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,18 @@ namespace InSalute.ViewModel
             {
                 _loginPassword = value;
                 OnPropertyChanged(nameof(LoginPassword));
+            }
+        }
+
+        private bool _loginPasswordVisible = false;
+
+        public bool LoginPasswordVisible
+        {
+            get => _loginPasswordVisible;
+            set
+            {
+                _loginPasswordVisible = value;
+                OnPropertyChanged(nameof(LoginPasswordVisible));
             }
         }
 
@@ -89,6 +102,13 @@ namespace InSalute.ViewModel
         public LoginViewModel(UserStore userStore, INavigationService closeModalService)
         {
             UserStore = userStore;
+            Settings.LoadSettings();
+            if (!string.IsNullOrWhiteSpace(Settings.saved_username) && !string.IsNullOrWhiteSpace(Settings.saved_password))
+            {
+                LoginUserName = EncryptProvider.Base64Decrypt(Settings.saved_username);
+                LoginPassword = EncryptProvider.Base64Decrypt(Settings.saved_password);
+                RememberMe = true;
+            }
             LoginButtonClicked = new DelegateCommand(LoginUser);
             CloseLoginCommand = new NavigateCommand(closeModalService);
         }
@@ -119,6 +139,12 @@ namespace InSalute.ViewModel
                     UserExtended user = userDetails.Result.Content.ReadAsAsync<UserExtended>().Result;
                     if (user != null)
                     {
+                        if (RememberMe)
+                        {
+                            Settings.saved_username = LoginUserName;
+                            Settings.saved_password = LoginPassword;
+                            Settings.SaveSettings();
+                        }
                         UserStore.CurrentUser = user;
                         CloseLoginCommand.Execute(null);
                     }

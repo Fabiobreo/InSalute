@@ -24,7 +24,7 @@
         <ContentControl Visibility="Collapsed" Content="{StaticResource ProxyElement}"/>
 
         <StackPanel Grid.Row="0" Grid.Column="0" Background="{StaticResource ThemeMainColor}" VerticalAlignment="Center" Margin="6 6 6 0" >
-            <Label Content="Manage Users" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+            <Label Content="Gestione utenti" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         </StackPanel>
 
         <DataGrid Grid.Row="2" Grid.Column="0" Margin="6 0 6 6" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="False" ItemsSource="{ Binding UsersCollection.View }" Background="White">
@@ -62,12 +62,12 @@
                 <DataGridCheckBoxColumn Binding="{Binding IsChecked}" Header="" Width="Auto" />
                 <DataGridTextColumn Binding="{ Binding Id }" Header="Id" Width="Auto" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{ Binding Email }" Header="Email" Width="*" />
-                <DataGridTextColumn Binding="{ Binding Username }" Header="Username" Width="*" />
-                <DataGridTextColumn Binding="{ Binding CreationDate }" Header="Creation Date" Width="*" />
-                <DataGridComboBoxColumn Header="Role" Width="90" SelectedItemBinding="{Binding Path=Role}"
+                <DataGridTextColumn Binding="{ Binding Username }" Header="Nome Utente" Width="*" />
+                <DataGridTextColumn Binding="{ Binding CreationDate }" Header="Data di creazione" Width="*" IsReadOnly="True"/>
+                <DataGridComboBoxColumn Header="Ruolo" Width="90" SelectedItemBinding="{Binding Path=Role}"
                                 ItemsSource="{Binding Source={StaticResource Owners}}" Visibility="{Binding DataContext.IsAdmin, Source={StaticResource ProxyElement}, Converter={StaticResource booleanVisibilityConverter}}"/>
 
-                <DataGridTextColumn Binding="{ Binding Role }" Header="Role" IsReadOnly="True" Width="Auto" Visibility="{Binding DataContext.IsManager, Source={StaticResource ProxyElement}, Converter={StaticResource booleanVisibilityConverter}}"/>
+                <DataGridTextColumn Binding="{ Binding Role }" Header="Ruolo" IsReadOnly="True" Width="Auto" Visibility="{Binding DataContext.IsManager, Source={StaticResource ProxyElement}, Converter={StaticResource booleanVisibilityConverter}}"/>
             </DataGrid.Columns>
         </DataGrid>
 
@@ -84,7 +84,7 @@
         </DockPanel>
         
         <DockPanel Grid.Row="3" Height="40" LastChildFill="False" Margin="0 12 0 12">
-            <Button DockPanel.Dock="Right" Grid.ColumnSpan="4" Width="100" Content="Close" Style="{StaticResource ButtonStyle}" Command="{Binding CloseManageUserCommand}"/>
+            <Button DockPanel.Dock="Right" Grid.ColumnSpan="4" Width="100" Content="Chiudi" Style="{StaticResource ButtonStyle}" Command="{Binding CloseManageUserCommand}"/>
         </DockPanel>
     </Grid>
 </UserControl>

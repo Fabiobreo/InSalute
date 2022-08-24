@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -102,7 +103,7 @@ namespace InSalute.ViewModel
 
             if (usersToDelete.Count > 0)
             {
-                MessageBoxResult result = MessageBox.Show("Do you really want to delete " + usersToDelete.Count + " user(s)?\nThis choice is final.", "Delete users", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                MessageBoxResult result = MessageBox.Show("Vuoi veramente eliminare " + usersToDelete.Count + " utente/i?\nQuesta scelta è definitiva.", "Elimina utenti", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
                 if (result == MessageBoxResult.Yes)
                 {
@@ -128,7 +129,7 @@ namespace InSalute.ViewModel
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                             return;
                         }
 
@@ -149,19 +150,19 @@ namespace InSalute.ViewModel
 
                     if (eliminated == usersToDelete.Count)
                     {
-                        MessageBox.Show("All users were deleted successfully", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show("Tutti gli utenti sono stati cancellati con successo.", "Eliminazione avvenuta con successo", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
-                        MessageBox.Show("There was some problems and we could delete only " + eliminated + " out of " + usersToDelete.Count + " users.\n" +
-                            "Please retry to delete later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show("Ci sono stati dei problemi e si è riusciti a cancellare solamente " + eliminated + " di " + usersToDelete.Count + " utenti.\n" +
+                            "Per favore, riprova a cancellarli più tardi.", "Attenzione", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     ReloadUsers();
                 }
             }
             else
             {
-                MessageBox.Show("There are no users listed to be eliminated.", "No eliminated expenses", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Non ci sono utenti da eliminare.", "Nessun utente", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
@@ -183,6 +184,7 @@ namespace InSalute.ViewModel
                     Users editedUser = new Users()
                     {
                         id = user.Id,
+                        email = user.Email,
                         username = user.Username,
                         creation_date = user.CreationDate,
                         role = user.Role
@@ -195,7 +197,7 @@ namespace InSalute.ViewModel
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
@@ -209,13 +211,14 @@ namespace InSalute.ViewModel
                 if (edited != total)
                 {
                     errorOccurred = true;
-                    MessageBox.Show("There was some problems and we could save only " + edited.ToString() + " out of " + total.ToString() + " users.\nPlease retry to save later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("Ci sono stati dei problemi ed è stato possibile salvare solamente " + edited.ToString() + " di " + total.ToString() + " utenti.\nPer favore, riprovare a salvare più tardi.", "Attenzione", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             
             if (UsersList.Any(user => user.Id == 0))
             {
                 List<UserExtended> usersToAdd = UsersList.Where(user => user.Id == 0).ToList();
+                usersToAdd.Reverse();
                 int total = usersToAdd.Count;
                 int added = 0;
                 for (int i = usersToAdd.Count - 1; i >= 0; i--)
@@ -235,9 +238,9 @@ namespace InSalute.ViewModel
 
                     if (emailError || usernameError)
                     {
-                        string message = "Could not add user with email: " + user.Email + " and username: " + user.Username + "\n";
-                        message += "Fix problems with: \n" + (emailError ? "- Email\n" : "") + (usernameError ? "- Username" : "");
-                        MessageBox.Show(message, "User not added", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        string message = "Impossibile aggiungere utente con email: " + user.Email + " e username: " + user.Username + "\n";
+                        message += "Risolvi i problemi riguardanti: \n" + (emailError ? "- Email\n" : "") + (usernameError ? "- Username" : "");
+                        MessageBox.Show(message, "Utente non aggiunto", MessageBoxButton.OK, MessageBoxImage.Warning);
                         continue;
                     }
                     else
@@ -245,6 +248,7 @@ namespace InSalute.ViewModel
                         Users newUser = new Users()
                         {
                             id = user.Id,
+                            email = user.Email,
                             password = Convert.ToBase64String(Encoding.UTF8.GetBytes("Password")),
                             username = user.Username,
                             creation_date = user.CreationDate,
@@ -258,7 +262,7 @@ namespace InSalute.ViewModel
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                             return;
                         }
 
@@ -274,7 +278,7 @@ namespace InSalute.ViewModel
                 if (added != total)
                 {
                     errorOccurred = true;
-                    MessageBox.Show("There was some problems and we could save only " + added.ToString() + " out of " + total.ToString() + " users.\nPlease retry to save later.", "Attention", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("Ci sono stati dei problemi ed è stato possibile salvare solamente " + added.ToString() + " di " + total.ToString() + " utenti.\nPer favore, riprova a salvare più tardi.", "Attenzione", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
 
                 foreach (UserExtended user in usersToAdd)
@@ -291,13 +295,13 @@ namespace InSalute.ViewModel
 
                 if (added > 0)
                 {
-                    MessageBox.Show("The default password is 'password'.\nPlease remember to tell the user to change it to a secure one when it logs in the first time.", "User password", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("La password di default per i nuovi utenti è 'Password'.\nPer favore ricorda di informarli di cambiarla in una sicura la prima volta che si autenticano.", "Password degli utenti", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
 
             if (!errorOccurred)
             {
-                MessageBox.Show("All users were saved successfully.", "No errors", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Tutti gli utenti son stati salvati con successo.", "Nessun errore", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             
@@ -308,7 +312,7 @@ namespace InSalute.ViewModel
             bool skipReload = false;
             if (EditedUsers.Count > 0 || UsersList.Any(user => user.Id == 0))
             {
-                MessageBoxResult result = MessageBox.Show("You have unsaved edits, do you really want to reload your users and lose your changes?", "Pending changes", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                MessageBoxResult result = MessageBox.Show("Ci sono delle modifiche non salvate, vuoi veramente ricaricare gli utenti e perdere i cambiamenti effettuati?", "Modifiche pendenti", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (result == MessageBoxResult.Yes)
                 {
                     skipReload = true;
@@ -331,20 +335,20 @@ namespace InSalute.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (userDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 string result = userDetails.Result.Content.ReadAsStringAsync().Result;
-                List<UserExtended> userExpenses = JsonConvert.DeserializeObject<List<UserExtended>>(result);
+                List<UserExtended> userExtended = JsonConvert.DeserializeObject<List<UserExtended>>(result);
                 if (UsersList == null)
                 {
                     UsersList = new ObservableCollection<UserExtended>();
                 }
                 UsersList.Clear();
-                foreach (UserExtended user in userExpenses)
+                foreach (UserExtended user in userExtended)
                 {
                     if (user.Id != UserStore.CurrentUser.Id)
                     {
@@ -355,7 +359,7 @@ namespace InSalute.ViewModel
             }
             else
             {
-                MessageBox.Show("Could not refresh users.\nError: " + userDetails.Result.StatusCode, "Could not refresh", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Non si è riusciti a ricaricare della tabella.\nErrore: " + userDetails.Result.StatusCode, "Impossibile ricaricare", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -374,8 +378,8 @@ namespace InSalute.ViewModel
         {
             try
             {
-                System.Net.Mail.MailAddress addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
+                EmailAddressAttribute validator = new EmailAddressAttribute();
+                return validator.IsValid(email);
             }
             catch
             {
