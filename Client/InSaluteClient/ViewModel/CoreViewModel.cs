@@ -1,34 +1,30 @@
-﻿using BusinessLogic;
+﻿using ICSharpCode.SharpZipLib.Zip;
 using InSalute.Models;
 using InSalute.Stores;
 using InSalute.Utilities;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
 using MVVMEssentials.ViewModels;
-using Prism.Commands;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Net.Http;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Collections.ObjectModel;
-using System.Windows.Data;
-using Newtonsoft.Json.Converters;
+using NETCore.Encrypt;
 using Newtonsoft.Json;
-using System.Globalization;
-using System.Windows.Input;
-using MVVMEssentials.Commands;
-using System.Net.Mail;
-using System.Net;
-using Microsoft.WindowsAPICodePack.Dialogs;
-using System.Xml.Linq;
-using System.IO;
 using Newtonsoft.Json.Linq;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using PdfSharp.Pdf.Security;
-using ICSharpCode.SharpZipLib.Zip;
+using Prism.Commands;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Mail;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
+using System.Xml;
 
 namespace InSalute.ViewModel
 {
@@ -40,6 +36,7 @@ namespace InSalute.ViewModel
         public ICommand NavigateLoginCommand { get; }
         public ICommand NavigateUserCommand { get; }
         public ICommand NavigateManageUserCommand { get; }
+        public ICommand NavigateLogCommand { get; }
         public DelegateCommand LoadConfigurationCommand { get; }
         public DelegateCommand SaveConfigurationCommand { get; }
         public DelegateCommand LoadAttachmentsCommand { get; }
@@ -58,6 +55,18 @@ namespace InSalute.ViewModel
             {
                 _isManageAllAccountVisible = value;
                 OnPropertyChanged(nameof(IsManageAllAccountVisible));
+            }
+        }
+
+        private bool _isLogVisible;
+
+        public bool IsLogVisible
+        {
+            get => _isLogVisible;
+            set
+            {
+                _isLogVisible = value;
+                OnPropertyChanged(nameof(IsLogVisible));
             }
         }
 
@@ -276,7 +285,7 @@ namespace InSalute.ViewModel
         private readonly UserStore UserStore;
 
         public CoreViewModel(UserStore userStore, INavigationService homeNavigationService,
-            INavigationService loginNavigationService, INavigationService userNavigationService, INavigationService manageUserNavigationService)
+            INavigationService loginNavigationService, INavigationService userNavigationService, INavigationService manageUserNavigationService, INavigationService logService)
         {
             LogoutCommand = new DelegateCommand(Logout);
 
@@ -284,6 +293,7 @@ namespace InSalute.ViewModel
             NavigateLoginCommand = new NavigateCommand(loginNavigationService);
             NavigateUserCommand = new NavigateCommand(userNavigationService);
             NavigateManageUserCommand = new NavigateCommand(manageUserNavigationService);
+            NavigateLogCommand = new NavigateCommand(logService);
             LoadConfigurationCommand = new DelegateCommand(LoadConfiguration);
             SaveConfigurationCommand = new DelegateCommand(SaveConfiguration);
             LoadAttachmentsCommand = new DelegateCommand(LoadAttachments);
@@ -316,10 +326,11 @@ namespace InSalute.ViewModel
                 var configs = new
                 {
                     mail = SenderEmail,
+                    password = EncryptProvider.Base64Encrypt(SenderPassword),
                     first_object = FirstObject,
                     second_object = SecondObject,
-                    first_text = GetContent(FirstEmail, false),
-                    second_text = GetContent(SecondEmail, false)
+                    first_text = FirstEmail,
+                    second_text = SecondEmail,
                 };
 
                 string jsonData = JsonConvert.SerializeObject(configs);
@@ -347,6 +358,12 @@ namespace InSalute.ViewModel
                         SenderEmail = token.ToObject<string>();
                     }
 
+                    token = JsonConvert.DeserializeObject<JToken>(configurationFileContent)["password"];
+                    if (token != null)
+                    {
+                        SenderPassword = EncryptProvider.Base64Decrypt(token.ToObject<string>());
+                    }
+
                     token = JsonConvert.DeserializeObject<JToken>(configurationFileContent)["first_object"];
                     if (token != null)
                     {
@@ -362,13 +379,13 @@ namespace InSalute.ViewModel
                     token = JsonConvert.DeserializeObject<JToken>(configurationFileContent)["first_text"];
                     if (token != null)
                     {
-                        FirstEmail = $"<FlowDocument xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\"><Paragraph Foreground=\"Black\">{token.ToObject<string>()}</Paragraph></FlowDocument>";
+                        FirstEmail = token.ToObject<string>();
                     }
 
                     token = JsonConvert.DeserializeObject<JToken>(configurationFileContent)["second_text"];
                     if (token != null)
                     {
-                        SecondEmail = $"<FlowDocument xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\"><Paragraph Foreground=\"Black\">{token.ToObject<string>()}</Paragraph></FlowDocument>";
+                        SecondEmail = token.ToObject<string>();
                     }
                 }
             }
@@ -386,12 +403,14 @@ namespace InSalute.ViewModel
             if (user != null)
             {
                 IsManageAllAccountVisible = user.Role.ToLower() == "admin" || user.Role.ToLower() == "manager";
+                IsLogVisible = user.Role.ToLower() == "admin";
                 IsNotAdmin = user.Role != "admin";
                 DisplayedUsername = user.Username + " (" + user.Role + ")";
             }
             else
             {
                 IsManageAllAccountVisible = false;
+                IsLogVisible = false;
                 IsNotAdmin = true;
                 DisplayedUsername = "";
             }
@@ -420,6 +439,7 @@ namespace InSalute.ViewModel
                     else
                     {
                         MessageBox.Show("C'è stato un errore durante l'invio della prima email, riprova ad inviarla.", "Errore durante l'invio", MessageBoxButton.OK, MessageBoxImage.Error);
+                        EmailSentCorrectly = false;
                     }
                 }
                 else
@@ -453,6 +473,7 @@ namespace InSalute.ViewModel
 
         private bool SendEmail(string sender, string senderPwd, string receiver, string subject, string body, string billing = "", List<string> attachments = null)
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             bool success = true;
             using MailMessage mail = new MailMessage(sender, receiver);
             mail.Subject = subject;
@@ -466,13 +487,13 @@ namespace InSalute.ViewModel
             {
                 if (_secureAttachmentPath == "")
                 {
-                    if (ReceiverAttachments.Count == 1 && ReceiverAttachments[0].EndsWith(".pdf"))
+                    if (attachments.Count == 1 && attachments[0].EndsWith(".pdf"))
                     {
-                        _secureAttachmentPath = SecureFile(ReceiverAttachments[0]);
+                        _secureAttachmentPath = SecureFile(attachments[0]);
                     }
-                    else if (ReceiverAttachments.Count > 1)
+                    else if (attachments.Count > 1)
                     {
-                        _secureAttachmentPath = SecureFile(ReceiverAttachments);
+                        _secureAttachmentPath = SecureFile(attachments);
                     }
                 }
                 mail.Attachments.Add(new Attachment(_secureAttachmentPath));
@@ -480,26 +501,61 @@ namespace InSalute.ViewModel
 
             mail.IsBodyHtml = false;
             SmtpClient smtp = new SmtpClient
-            {// TODO FIX
-                //Host = "smtp.gmail.com",
-                Host = "smtp-mail.outlook.com",
+            {
                 DeliveryMethod = SmtpDeliveryMethod.Network,
                 UseDefaultCredentials = false,
-                //Credentials = new NetworkCredential(from, "otucenwipsktxxdd"),
-                //Credentials = new NetworkCredential(SenderEmail, "trupihrvchpcswdf"),
                 Credentials = new NetworkCredential(sender, senderPwd),
                 EnableSsl = true,
                 Port = 25
             };
+
+            string domain = sender[(sender.IndexOf("@") + 1)..];
+            if (domain == "gmail.com")
+            {
+                smtp.Host = "smtp.gmail.com";
+            }
+            else if (domain == "hotmail.it" || domain == "outlook.com")
+            {
+                smtp.Host = "smtp-mail.outlook.com";
+            }
+            else if (domain == "poliambulatorioinsalute.it")
+            {
+                smtp.Host = "smtps.aruba.it";
+                smtp.Port = 587;
+            }
+
             try
             {
                 smtp.Send(mail);
-                // TODO ADD LOG TO DB
             }
             catch (SmtpException e)
             {
                 success = false;
                 Console.WriteLine(e.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            try
+            {
+                Dictionary<string, string> parameters = new Dictionary<string, string>()
+                {
+                    ["user_id"] = UserStore.CurrentUser.Id.ToString(),
+                    ["receiver_email"] = receiver,
+                    ["sending_time"] = DateTime.Now.ToString(CultureInfo.InvariantCulture)
+                };
+
+                Task<HttpResponseMessage> logDetails = WebAPI.PostCall(API_URIs.log, parameters, UserStore.CurrentUser.Token);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
             }
 
             return success;
@@ -525,6 +581,12 @@ namespace InSalute.ViewModel
             {
                 errors = true;
                 errorMessage += "- Email destinatario non valida." + Environment.NewLine;
+            }
+
+            if (ReceiverAttachments == null || ReceiverAttachments.Count == 0)
+            {
+                errors = true;
+                errorMessage += "- Non ci sono allegati." + Environment.NewLine;
             }
 
             if (string.IsNullOrWhiteSpace(FirstObject))
@@ -608,9 +670,18 @@ namespace InSalute.ViewModel
 
         private string GetContent(string richText, bool replace = true)
         {
-            XDocument doc = XDocument.Parse(richText);
-            XElement paragraph = doc.Root.Descendants().First();
-            string rawRichText = paragraph.Value;
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(richText);
+            XmlNodeList paragraphList = doc.GetElementsByTagName("Paragraph");
+            string rawRichText = "";
+            foreach (XmlElement paragraph in paragraphList)
+            {
+                if (string.IsNullOrWhiteSpace(rawRichText))
+                    rawRichText = paragraph.InnerText;
+                else
+                    rawRichText = string.Join("\n", new string[] { rawRichText, paragraph.InnerText });
+            }
+
             if (replace)
             {
                 rawRichText = rawRichText.Replace("{NOME}", ReceiverName);
@@ -649,31 +720,33 @@ namespace InSalute.ViewModel
             string filename = Path.Combine(Path.GetDirectoryName(files[0]),
                 !string.IsNullOrWhiteSpace(ReceiverName) && !string.IsNullOrWhiteSpace(ReceiverSurname) ?
                 ReceiverSurname + ReceiverName + ".zip" : "attachments.zip");
-            using (ZipFile zipFile = ZipFile.Create(filename))
+            using (ZipOutputStream OutputStream = new ZipOutputStream(File.Create(filename)))
             {
-                zipFile.BeginUpdate();
-
-                files.ForEach(x =>
-                {
-                    if (Path.HasExtension(x))
-                    {
-                        zipFile.Add(x);
-                    }
-
-                    else if (!Path.HasExtension(x) && Directory.Exists(x))
-                    {
-                        Directory.GetFiles(x, "*.*", SearchOption.AllDirectories).ToList().ForEach(zipFile.Add);
-                    }
-                });
+                OutputStream.SetLevel(9);
                 EncryptPassword = Guid.NewGuid().ToString();
-                zipFile.Password = EncryptPassword;
+                OutputStream.Password = EncryptPassword;
+                OutputStream.UseZip64 = UseZip64.On;
+                byte[] buffer = new byte[4096];
 
-                zipFile.UseZip64 = UseZip64.On;
+                foreach (string file in files)
+                {
+                    ZipEntry entry = new ZipEntry(Path.GetFileName(file));
+                    entry.DateTime = DateTime.Now;
+                    OutputStream.PutNextEntry(entry);
 
-                zipFile.CommitUpdate();
-                zipFile.Close();
+                    using FileStream fs = File.OpenRead(file);
+                    int sourceBytes;
 
+                    do
+                    {
+                        sourceBytes = fs.Read(buffer, 0, buffer.Length);
+                        OutputStream.Write(buffer, 0, sourceBytes);
+                    } while (sourceBytes > 0);
+                }
+                OutputStream.Finish();
+                OutputStream.Close();
             }
+
 
             return filename;
         }

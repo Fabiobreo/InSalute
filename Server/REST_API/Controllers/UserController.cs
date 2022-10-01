@@ -139,8 +139,14 @@ namespace REST_API.Controllers
                     {
                         foreach (var user in entities.Users)
                         {
-                            users.Add(new { Id = user.id, Email = user.email, Username = user.username,
-                                Role = user.role, CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss") });
+                            users.Add(new
+                            {
+                                Id = user.id,
+                                Email = user.email,
+                                Username = user.username,
+                                Role = user.role,
+                                CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss")
+                            });
                         }
                     }
                     else
@@ -149,14 +155,19 @@ namespace REST_API.Controllers
                         {
                             if (user.role.ToLower() != "admin" && user.role.ToLower() != "manager")
                             {
-                                users.Add(new { Id = user.id, Email = user.email, Username = user.username, Role = user.role,
+                                users.Add(new
+                                {
+                                    Id = user.id,
+                                    Email = user.email,
+                                    Username = user.username,
+                                    Role = user.role,
                                     CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss")
                                 });
                             }
                         }
                     }
 
-                    if (users.Count > 0)
+                    if (users.Count >= 0)
                     {
                         return Ok(users);
                     }
@@ -305,7 +316,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        var response = new { Id = user.id, CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss"), Message = errorMessage};
+                        var response = new { Id = user.id, CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss"), Message = errorMessage };
                         var res = Request.CreateResponse(HttpStatusCode.Created, response);
                         return res;
                     }
@@ -488,15 +499,24 @@ namespace REST_API.Controllers
 
             if (string.IsNullOrWhiteSpace(errorMessage))
             {
-                var response = new { Id = user_to_edit.id, Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
-                    Status = "aggiornato con successo" };
+                var response = new
+                {
+                    Id = user_to_edit.id,
+                    Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
+                    Status = "aggiornato con successo"
+                };
                 var res = Request.CreateResponse(HttpStatusCode.OK, response);
                 return res;
             }
             else
             {
-                var response = new { Id = user_to_edit.id, Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
-                    Status = "aggiornato con successo", Message = errorMessage };
+                var response = new
+                {
+                    Id = user_to_edit.id,
+                    Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
+                    Status = "aggiornato con successo",
+                    Message = errorMessage
+                };
                 var res = Request.CreateResponse(HttpStatusCode.OK, response);
                 return res;
             }

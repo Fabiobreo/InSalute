@@ -1,9 +1,9 @@
-﻿using System.Windows;
+﻿using InSalute.Stores;
 using InSalute.ViewModel;
-using InSalute.Stores;
 using MVVMEssentials.Services;
 using MVVMEssentials.Stores;
 using MVVMEssentials.ViewModels;
+using System.Windows;
 
 namespace InSalute
 {
@@ -59,13 +59,13 @@ namespace InSalute
         {
             INavigationService navigationService = CreateHomeNavigationService();
             navigationService.Navigate();
-            
+
             MainWindow = new MainWindow()
             {
                 DataContext = new MainViewModel(_navigationStore, _modalNavigationStore)
             };
             MainWindow.Show();
-            
+
             base.OnStartup(e);
         }
 
@@ -86,11 +86,11 @@ namespace InSalute
         {
             return new NavigationService<CoreViewModel>(NavigationStore, CreateExpensesViewModel);
         }
-        
+
         private CoreViewModel CreateExpensesViewModel()
         {
             return new CoreViewModel(UserStore, CreateHomeNavigationService(),
-                CreateLoginNavigationService(), CreateUserNavigationService(), CreateManageUserNavigationService());
+                CreateLoginNavigationService(), CreateUserNavigationService(), CreateManageUserNavigationService(), CreateLogNavigationService());
         }
         #endregion Create ExpensesView
 
@@ -129,5 +129,17 @@ namespace InSalute
             return new ManageUserViewModel(UserStore, new CloseModalNavigationService(ModalNavigationStore));
         }
         #endregion Create ManageUserView
+
+        #region Create LogView
+        private INavigationService CreateLogNavigationService()
+        {
+            return new NavigationService<LogViewModel>(ModalNavigationStore, CreateLogViewModel);
+        }
+
+        private LogViewModel CreateLogViewModel()
+        {
+            return new LogViewModel(UserStore, new CloseModalNavigationService(ModalNavigationStore));
+        }
+        #endregion Create LogView
     }
 }

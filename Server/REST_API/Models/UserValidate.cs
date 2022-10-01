@@ -25,7 +25,7 @@ namespace REST_API.Models
                         && user.password == encryptedPwd);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return false;
             }

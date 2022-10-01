@@ -39,7 +39,22 @@ namespace REST_API.Controllers
                     List<Log> filteredResults = filters.Filter(entities.Log);
                     if (filteredResults.Count > 0)
                     {
-                        return Ok(filteredResults);
+                        List<dynamic> logs = new List<dynamic>();
+                        foreach (Log log in filteredResults)
+                        {
+                            var user = entities.Users.FirstOrDefault(us => us.id == log.user_id);
+                            if (user != null)
+                            {
+                                logs.Add(new
+                                {
+                                    Id = log.id,
+                                    Sender = user.username,
+                                    ReceiverEmail = log.receiver_email,
+                                    SendingTime = log.sending_time
+                                });
+                            }
+                        }
+                        return Ok(logs);
                     }
                     else
                     {
@@ -116,8 +131,13 @@ namespace REST_API.Controllers
 
                     entities.Log.Add(log);
                     entities.SaveChanges();
-                    var response = new { Id = log.id, UserId = log.user_id, ReceiverEmail = log.receiver_email,
-                        SendingDate = log.sending_time.ToString("dd/MM/yyyy") };
+                    var response = new
+                    {
+                        Id = log.id,
+                        UserId = log.user_id,
+                        ReceiverEmail = log.receiver_email,
+                        SendingDate = log.sending_time.ToString("dd/MM/yyyy")
+                    };
                     return Request.CreateResponse(HttpStatusCode.Created, response);
                 }
             }

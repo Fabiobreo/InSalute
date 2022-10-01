@@ -13,3 +13,4 @@ Server/REST_API/obj/
 Server/BusinessLogic/obj/
 Server/BusinessLogic/bin/
 Server/.vs/
+Server/app.publish/

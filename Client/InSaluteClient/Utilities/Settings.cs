@@ -1,8 +1,5 @@
 ﻿using NETCore.Encrypt;
-using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Text;
 
 namespace InSalute.Utilities
 {
@@ -15,6 +12,7 @@ namespace InSalute.Utilities
         {
             saved_username = ConfigurationManager.AppSettings["Username"];
             saved_password = ConfigurationManager.AppSettings["Password"];
+            API_URIs.baseURI = ConfigurationManager.AppSettings["BaseURI"];
         }
 
         public static void SaveSettings()

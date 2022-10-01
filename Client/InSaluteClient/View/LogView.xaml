@@ -1,0 +1,84 @@
+﻿<UserControl x:Class="InSalute.View.LogView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:InSalute.View"
+             xmlns:utils="clr-namespace:InSalute.Utilities"
+             xmlns:viewmodel="clr-namespace:InSalute.ViewModel"
+             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             d:DataContext="{d:DesignInstance Type=viewmodel:LogViewModel}"
+             mc:Ignorable="d" 
+             d:DesignHeight="400" d:DesignWidth="600" MaxWidth="800" MaxHeight="600">
+    <UserControl.Resources>
+        <CollectionViewSource x:Key="Owners" Source="{Binding Roles}"/>
+        <FrameworkElement x:Key="ProxyElement" DataContext="{Binding}"/>
+        <BooleanToVisibilityConverter x:Key="booleanVisibilityConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <ContentControl Visibility="Collapsed" Content="{StaticResource ProxyElement}"/>
+
+        <StackPanel Grid.Row="0" Grid.Column="0" Background="{StaticResource ThemeMainColor}" VerticalAlignment="Center" Margin="6 6 6 0" >
+            <Label Content="Gestione log" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="2" Grid.Column="0" Margin="6 0 6 6" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" ItemsSource="{ Binding LogCollection.View }" Background="White">
+            <DataGrid.Resources>
+                <SolidColorBrush x:Key="{ x:Static SystemColors.HighlightBrushKey }" Color="#22000000"/>
+            </DataGrid.Resources>
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="{Binding RowColor}"/>
+                    <Setter Property="Foreground" Value="#000000"/>
+                    <Setter Property="Padding" Value="0 16 0 16"/>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Padding" Value="4,8,4,8"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{ x:Type DataGridCell }">
+                                <Border Padding="{ TemplateBinding Padding }"
+                                            BorderBrush="{ TemplateBinding BorderBrush }"
+                                            BorderThickness="{ TemplateBinding BorderThickness }"
+                                            Background="{ TemplateBinding Background }"
+                                            SnapsToDevicePixels="True">
+                                    <ContentPresenter SnapsToDevicePixels="{ TemplateBinding SnapsToDevicePixels }"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </DataGrid.CellStyle>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{ Binding Id }" Header="Id" Width="Auto" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{ Binding Sender }" Header="Nome Utente" Width="*" />
+                <DataGridTextColumn Binding="{ Binding ReceiverEmail }" Header="Email Destinatario" Width="*" />
+                <DataGridTextColumn Binding="{ Binding SendingTime }" Header="Data di invio" Width="*" IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel Grid.Row="1" Height="60" LastChildFill="False">
+            <Label Margin="6" Content="Da:" FontWeight="Bold" VerticalAlignment="Center" Style="{StaticResource LabelStyle}"/>
+            <xctk:DateTimePicker Margin="6" Format="ShortDate" TimePickerVisibility="Collapsed" FontSize="18" FontWeight="Light" FontFamily="{StaticResource Roboto}" Value="{Binding FromDate}" Width="130"/>
+
+            <Label Margin="6" Content="a:" FontWeight="Bold" VerticalAlignment="Center" Style="{StaticResource LabelStyle}"/>
+            <xctk:DateTimePicker Margin="6" Format="ShortDate" TimePickerVisibility="Collapsed" FontSize="18" FontWeight="Light" FontFamily="{StaticResource Roboto}" Value="{Binding ToDate}" Width="130"/>
+            
+            <Button DockPanel.Dock="Right" Margin="6 6 15 6" Command="{Binding ReloadUsersCommand}" Content="Reload" Style="{StaticResource ButtonStyle}" Width="100"/>
+        </DockPanel>
+        
+        <DockPanel Grid.Row="3" Height="40" LastChildFill="False" Margin="0 12 0 12">
+            <Button DockPanel.Dock="Right" Grid.ColumnSpan="4" Width="100" Content="Chiudi" Style="{StaticResource ButtonStyle}" Command="{Binding CloseManageUserCommand}"/>
+        </DockPanel>
+    </Grid>
+</UserControl>
