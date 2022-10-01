@@ -8,54 +8,64 @@
              xmlns:viewmodel="clr-namespace:InSalute.ViewModel" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              d:DataContext="{d:DesignInstance Type=viewmodel:UserViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="400">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+             d:DesignHeight="400" d:DesignWidth="700" Height="400" Width="700">
+    <DockPanel LastChildFill="False">
+        <Grid DockPanel.Dock="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="50"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-        </Grid.RowDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Background="{StaticResource ThemeMainColor}" Margin="0 0 0 6" >
-            <Label Content="User Profile" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="{StaticResource ThemeMainColor}" Margin="0 0 0 6" >
+                <Label Content="Profilo Utente" Style="{StaticResource LabelTitle}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            </DockPanel>
+
+            <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Margin="0 0 0 12">
+                <Image Width="80" Height="80" Source="../Resources/Images/user.png" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Center" Margin="0 0 6 0"/>
+                <StackPanel>
+                    <WrapPanel>
+                        <Label Content="Id:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
+                        <Label Content="{Binding Id}" Style="{StaticResource LabelStyle}"/>
+                    </WrapPanel>
+                    <WrapPanel>
+                        <Label Content="Ruolo:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
+                        <Label Content="{Binding Role}" Style="{StaticResource LabelStyle}"/>
+                    </WrapPanel>
+                    <WrapPanel>
+                        <Label Content="Data di creazione:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
+                        <Label Content="{Binding Date}" Style="{StaticResource LabelStyle}"/>
+                    </WrapPanel>
+                </StackPanel>
+            </DockPanel>
+
+            <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Content="Email" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
+            <TextBox Style="{StaticResource TextBoxStyle}" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Text="{Binding Email}" MinWidth="300" MaxWidth="400" Margin="6 0" HorizontalAlignment="Center"/>
+
+            <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Content="Nome Utente" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
+            <TextBox Style="{StaticResource TextBoxStyle}" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding Username}" MinWidth="200" Margin="6 0"/>
+            <Label Grid.Row="4" Grid.Column="3" Grid.ColumnSpan="2" Content="Password" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
+            <PasswordBox Grid.Row="5" Grid.Column="3" Grid.ColumnSpan="2" utils:PasswordHelper.Attach="true" MinWidth="200" ToolTip="Non conosciamo la tua password, usa questo campo solo per cambiare la tua." Margin="6 0"
+                         utils:PasswordHelper.Password="{Binding Path=Password,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}" Style="{StaticResource PasswordBoxStyle}" />
+
+
+        </Grid>
+    
+        <DockPanel Margin="18 18 18 6" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="5" DockPanel.Dock="Bottom" HorizontalAlignment="Center">
+            <Button Width="100" Content="Salva" Style="{StaticResource ButtonStyle}" Command="{Binding SaveCommand}"/>
+            <Button Width="100" Content="Cancella" Style="{StaticResource ButtonStyle}" Command="{Binding CancelCommand}"/>
         </DockPanel>
-
-        <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center" Margin="0 0 0 12">
-            <Image Width="80" Height="80" Source="../Resources/Images/user.png" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Center" Margin="0 0 6 0"/>
-            <StackPanel>
-                <WrapPanel>
-                    <Label Content="Id:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
-                    <Label Content="{Binding Id}" Style="{StaticResource LabelStyle}"/>
-                </WrapPanel>
-                <WrapPanel>
-                    <Label Content="Role:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
-                    <Label Content="{Binding Role}" Style="{StaticResource LabelStyle}"/>
-                </WrapPanel>
-                <WrapPanel>
-                    <Label Content="Creation Date:" FontWeight="Bold" Style="{StaticResource LabelStyle}"/>
-                    <Label Content="{Binding Date}" Style="{StaticResource LabelStyle}"/>
-                </WrapPanel>
-            </StackPanel>
-        </DockPanel>
-
-        <Label Grid.Row="2" Grid.Column="0" Content="Username" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
-        <TextBox Style="{StaticResource TextBoxStyle}" Grid.Row="3" Grid.Column="0" Text="{Binding Username}" MinWidth="200" Margin="6 0"/>
-        <Label Grid.Row="2" Grid.Column="3" Content="Password" FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource LabelStyle}"/>
-        <PasswordBox Grid.Row="3" Grid.Column="2" utils:PasswordHelper.Attach="true" MinWidth="200" ToolTip="We don't store passwords, use this field only to change yours" Margin="6 0"
-                     utils:PasswordHelper.Password="{Binding Path=Password,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}" Style="{StaticResource PasswordBoxStyle}" />
-
-        <DockPanel Margin="18" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center">
-            <Button Width="100" Content="Save" Style="{StaticResource ButtonStyle}" Command="{Binding SaveCommand}"/>
-            <Button Width="100" Content="Cancel" Style="{StaticResource ButtonStyle}" Command="{Binding CancelCommand}"/>
-        </DockPanel>
-
-    </Grid>
+    </DockPanel>
 </UserControl>

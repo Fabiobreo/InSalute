@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using InSalute.Models;
 using InSalute.Stores;
 using InSalute.Utilities;
@@ -94,13 +94,13 @@ namespace InSalute.ViewModel
         {
             if (string.IsNullOrWhiteSpace(Email) || !IsValidEmail(Email))
             {
-                MessageBox.Show("Please enter a valid email.", "Wrong email", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Per favore, inserisci un'email valida.", "Email non valida", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Username))
             {
-                MessageBox.Show("Please enter a valid username", "Wrong username", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Per favore, inserisci un nome utente valido", "Nome utente non valido", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -112,6 +112,7 @@ namespace InSalute.ViewModel
             Users userToEdit = new Users()
             {
                 id = UserStore.CurrentUser.Id,
+                email = UserStore.CurrentUser.Email,
                 creation_date = UserStore.CurrentUser.CreationDate,
                 role = UserStore.CurrentUser.Role,
                 username = Username
@@ -129,7 +130,7 @@ namespace InSalute.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -146,20 +147,21 @@ namespace InSalute.ViewModel
                     }
                 }
                 Password = string.Empty;
-                MessageBox.Show("User details updated successfully.", "Update successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Profilo aggiornato con successo.", "Profilo aggiornato", MessageBoxButton.OK, MessageBoxImage.Information);
                 UserStore.CurrentUser = UserStore.CurrentUser; // To trigger ui refresh
                 CloseUserCommand.Execute(null);
             }
             else
             {
                 Password = string.Empty;
-                MessageBox.Show("There was an error during the update.\nError: " + userDetails.Result.StatusCode, "Update failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Si è verificato un errore durante l'aggiornamento.\nErrore: " + userDetails.Result.StatusCode, "Aggiornamento fallito", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+            UserStore.Update();
         }
 
         private void DeleteAccount()
         {
-            MessageBoxResult result = MessageBox.Show("Are you REALLY sure that you want to delete your account? This choice is final!", "No going back", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            MessageBoxResult result = MessageBox.Show("Vuoi VERAMENTE cancellare il tuo profilo? Questa scelta è definitiva!", "Attenzione", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result == MessageBoxResult.No)
             {
                 return;
@@ -177,7 +179,7 @@ namespace InSalute.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error during the comunication with the server:\n" + ex.Message, "Server error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -185,12 +187,12 @@ namespace InSalute.ViewModel
             {
                 UserStore.CurrentUser = null;
             
-                MessageBox.Show("User successfully deleted. We hope to see you again soon.", "User deleted", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Utente cancellato con successo.", "Utente cancellato", MessageBoxButton.OK, MessageBoxImage.Information);
                 NavigateLoginCommand.Execute(null);
             }
             else
             {
-                MessageBox.Show("There was an error during the deletion.\nError: " + userDetails.Result.StatusCode, "Deletion failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Si è verificato un errore durante la cancellazione.\nErrore: " + userDetails.Result.StatusCode, "Cancellazione fallita", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

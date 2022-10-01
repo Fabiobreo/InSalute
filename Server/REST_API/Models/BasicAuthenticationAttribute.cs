@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BusinessLogic;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
@@ -8,7 +9,6 @@ using System.Threading;
 using System.Web;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
-using DataAccessLayer;
 
 namespace REST_API.Models
 {

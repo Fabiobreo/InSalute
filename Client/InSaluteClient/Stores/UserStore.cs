@@ -19,6 +19,12 @@ namespace InSalute.Stores
         public bool IsLoggedIn => CurrentUser != null;
 
         public event Action CurrentUserChanged;
+        public event Action CurrentUserUpdated;
+
+        public void Update()
+        {
+            CurrentUserUpdated?.Invoke();
+        }
 
         public void Logout()
         {

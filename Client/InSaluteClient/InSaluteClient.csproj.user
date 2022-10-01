@@ -10,5 +10,8 @@
     <Page Update="View\HomeView.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Update="View\LogView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
 </Project>

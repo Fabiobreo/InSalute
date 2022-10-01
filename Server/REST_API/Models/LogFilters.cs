@@ -1,12 +1,10 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Web;
-using System.Web.UI.WebControls;
 
 namespace REST_API.Models
 {

@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using REST_API.Models;
 using System;
 using System.Net;
@@ -23,14 +23,21 @@ namespace REST_API.Controllers
             if (UserValidate.Login(username, frombase64pwd))
             {
                 Users user = UserValidate.GetUserDetails(username, frombase64pwd);
-                var response = new { Id = user.id, Username = user.username, Role = user.role, CreationDate = user.creation_date,
+                var response = new
+                {
+                    Id = user.id,
+                    Username = user.username,
+                    Role = user.role,
+                    CreationDate = user.creation_date,
+                    Email = user.email,
                     Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + frombase64pwd)),
-                    Status = user.username + " successfully logged in as " + user.role };
+                    Status = user.username + " loggato con successo con ruolo " + user.role
+                };
                 return Ok(response);
             }
             else
             {
-                return Content(HttpStatusCode.NotFound, "User with these credentials was not found");
+                return Content(HttpStatusCode.NotFound, "Utente con queste credenziali non è stato trovato.");
             }
         }
 

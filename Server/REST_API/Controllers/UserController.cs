@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using REST_API.Models;
 using System;
 using System.Collections.Generic;
@@ -28,7 +28,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.FirstOrDefault(us => us.id == id);
                     if (user != null)
@@ -37,7 +37,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        return Content(HttpStatusCode.NotFound, "User with id: " + id + " not found");
+                        return Content(HttpStatusCode.NotFound, "Utente con id: " + id + " non trovato");
                     }
                 }
             }
@@ -59,7 +59,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.FirstOrDefault(us => us.username == username);
                     if (user != null)
@@ -68,7 +68,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        return Content(HttpStatusCode.NotFound, "User with username: " + username + " not found");
+                        return Content(HttpStatusCode.NotFound, "Utente con nome utente: " + username + " non trovato");
                     }
                 }
             }
@@ -87,6 +87,7 @@ namespace REST_API.Controllers
                 return Ok(new
                 {
                     Id = user.id,
+                    Email = user.email,
                     Username = user.username,
                     Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(Security.Decrypt(user.password, Security.toCheck))),
                     Role = user.role,
@@ -99,17 +100,18 @@ namespace REST_API.Controllers
                 {
                     if (user.role.ToLower() == "admin" || user.role.ToLower() == "manager")
                     {
-                        return Content(HttpStatusCode.BadRequest, "You can't get details of users that have the same or higher roles than you.");
+                        return Content(HttpStatusCode.BadRequest, "Non puoi ottenere dettagli di utenti che hanno lo stesso ruolo, o un ruolo più alto, rispetto a te.");
                     }
                 }
                 else if (principal.IsInRole("user"))
                 {
-                    return Content(HttpStatusCode.BadRequest, "You can't get details of users other than you.");
+                    return Content(HttpStatusCode.BadRequest, "Non puoi ottenere dettagli di altri utenti.");
                 }
 
                 return Ok(new
                 {
                     Id = user.id,
+                    Email = user.email,
                     Username = user.username,
                     Role = user.role,
                     CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss")
@@ -129,7 +131,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var principal = Thread.CurrentPrincipal;
                     List<dynamic> users = new List<dynamic>();
@@ -137,8 +139,14 @@ namespace REST_API.Controllers
                     {
                         foreach (var user in entities.Users)
                         {
-                            users.Add(new { Id = user.id, Username = user.username,
-                                Role = user.role, CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss") });
+                            users.Add(new
+                            {
+                                Id = user.id,
+                                Email = user.email,
+                                Username = user.username,
+                                Role = user.role,
+                                CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss")
+                            });
                         }
                     }
                     else
@@ -147,20 +155,25 @@ namespace REST_API.Controllers
                         {
                             if (user.role.ToLower() != "admin" && user.role.ToLower() != "manager")
                             {
-                                users.Add(new { Id = user.id, Username = user.username, Role = user.role,
+                                users.Add(new
+                                {
+                                    Id = user.id,
+                                    Email = user.email,
+                                    Username = user.username,
+                                    Role = user.role,
                                     CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss")
                                 });
                             }
                         }
                     }
 
-                    if (users.Count > 0)
+                    if (users.Count >= 0)
                     {
                         return Ok(users);
                     }
                     else
                     {
-                        return Content(HttpStatusCode.NotFound, "There are no users in the database or you have not the permission to get them.");
+                        return Content(HttpStatusCode.NotFound, "Non ci sono utenti nel database o non hai i permessi per vederli.");
                     }
                 }
             }
@@ -206,15 +219,17 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     #region ids and emails maps
                     HashSet<long> ids = new HashSet<long>();
                     HashSet<string> usernames = new HashSet<string>();
+                    HashSet<string> emails = new HashSet<string>();
                     foreach (var us in entities.Users)
                     {
                         ids.Add(us.id);
                         usernames.Add(us.username);
+                        emails.Add(us.email);
                     }
 
                     if (ids.Contains(user.id) || user.id <= 0)
@@ -233,22 +248,34 @@ namespace REST_API.Controllers
                     }
                     #endregion ids and emails maps
 
+                    #region Email check
+                    if (string.IsNullOrWhiteSpace(user.email))
+                    {
+                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Manca il campo email, per favore inseriscilo.");
+                    }
+
+                    if (emails.Contains(user.email))
+                    {
+                        return Request.CreateErrorResponse(HttpStatusCode.Conflict, "Conflitto: c'è già un utente con questa email.");
+                    }
+                    #endregion Email check
+
                     #region Username check
                     if (string.IsNullOrWhiteSpace(user.username))
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "You are missing the username field, please provide one.");
+                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Manca il campo nome utente, per favore inseriscilo.");
                     }
 
                     if (usernames.Contains(user.username))
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.Conflict, "Conflict: there is already a user with this username");
+                        return Request.CreateErrorResponse(HttpStatusCode.Conflict, "Conflitto: c'è già un nome utente con questa email.");
                     }
                     #endregion Username check
 
                     #region Password check and encryption
                     if (string.IsNullOrWhiteSpace(user.password))
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "You should set a password for this account.");
+                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Dovresti settare una password per questo account.");
                     }
                     string frombase64pwd = Encoding.UTF8.GetString(Convert.FromBase64String(user.password));
                     user.password = Security.Encrypt(frombase64pwd, Security.toCheck);
@@ -272,7 +299,7 @@ namespace REST_API.Controllers
                     {
                         if (user.role != null)
                         {
-                            errorMessage = "You can't set your own role. Role set to user (default).";
+                            errorMessage = "Non puoi darti un ruolo da solo. Ruolo di default: user.";
                         }
                         user.role = "user";
                     }
@@ -289,7 +316,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        var response = new { Id = user.id, CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss"), Message = errorMessage};
+                        var response = new { Id = user.id, CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss"), Message = errorMessage };
                         var res = Request.CreateResponse(HttpStatusCode.Created, response);
                         return res;
                     }
@@ -316,7 +343,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     Users user = entities.Users.Where(us => us.id == id).FirstOrDefault();
                     if (user != null)
@@ -325,7 +352,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "User with id: " + id + " was not found!");
+                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Utente con id: " + id + " non trovato!");
                     }
                 }
             }
@@ -348,7 +375,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     Users user = entities.Users.Where(us => us.username == username).FirstOrDefault();
                     if (user != null)
@@ -357,7 +384,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "User with username " + username + " was not found!");
+                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Utente con username " + username + " non trovato!");
                     }
                 }
             }
@@ -374,7 +401,7 @@ namespace REST_API.Controllers
         /// <param name="edited_user">The new details of the user</param>
         /// <param name="user_to_edit">The user to edit</param>
         /// <returns>Id, Email and status of the request, if successfull.</returns>
-        private HttpResponseMessage Put(DatabaseEntities entities, Users edited_user, Users user_to_edit)
+        private HttpResponseMessage Put(InSaluteEntities entities, Users edited_user, Users user_to_edit)
         {
             string errorMessage = "";
             IPrincipal principal = Thread.CurrentPrincipal;
@@ -391,12 +418,12 @@ namespace REST_API.Controllers
                 {
                     if (user_to_edit.role.ToLower() == "admin" || user_to_edit.role.ToLower() == "manager")
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "The user that you want to edit has higher permission or the same as you.");
+                        return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "L'utente che vuoi modificare ha permessi maggiori o uguali ai tuoi.");
                     }
 
                     if (!string.IsNullOrWhiteSpace(edited_user.role))
                     {
-                        errorMessage = "You can't change this user role, you don't have the permission.\n";
+                        errorMessage = "Non puoi cambiare il ruolo di questo utente, non ne hai i permessi.\n";
                     }
                 }
             }
@@ -404,14 +431,34 @@ namespace REST_API.Controllers
             {
                 if (!((ClaimsIdentity)principal.Identity).HasClaim("Id", user_to_edit.id.ToString()))
                 {
-                    return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "You don't have the permission to change accounts that are not yours.");
+                    return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "Non hai il permesso di cambiare altri profili.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(edited_user.role))
                 {
-                    errorMessage = "You can't change this user role, you don't have the permission.\n";
+                    errorMessage = "Non puoi cambiare il ruolo di questo utente, non ne hai i permessi.\n";
                 }
             }
+
+            #region Check Email
+            if (!string.IsNullOrWhiteSpace(edited_user.email))
+            {
+                HashSet<string> emails = new HashSet<string>();
+                foreach (var us in entities.Users)
+                {
+                    if (us != user_to_edit)
+                    {
+                        emails.Add(us.email);
+                    }
+                }
+
+                if (emails.Contains(edited_user.email))
+                {
+                    return Request.CreateErrorResponse(HttpStatusCode.Conflict, "Conflitto: c'è già un utente con questa email. Nessuna modifica verrà effettuata a questo utente.");
+                }
+                user_to_edit.email = edited_user.email;
+            }
+            #endregion Check Email
 
             #region Check Username
             if (!string.IsNullOrWhiteSpace(edited_user.username))
@@ -427,11 +474,11 @@ namespace REST_API.Controllers
 
                 if (usernames.Contains(edited_user.username))
                 {
-                    return Request.CreateErrorResponse(HttpStatusCode.Conflict, "Conflict: there is already a user with this username. No edit will be done to this user.");
+                    return Request.CreateErrorResponse(HttpStatusCode.Conflict, "Conflitto: c'è già un utente con questo nome utente. Nessuna modifica verrà effettuata a questo utente.");
                 }
                 user_to_edit.username = edited_user.username;
             }
-            #endregion Check Email
+            #endregion Check Username
 
             #region Check Password and encryption
             if (!string.IsNullOrWhiteSpace(edited_user.password))
@@ -443,7 +490,7 @@ namespace REST_API.Controllers
                 }
                 else
                 {
-                    errorMessage += "Only the account owner can change the password. The password will not be changed.";
+                    errorMessage += "Solo il proprietario del profilo può cambiare la password. Questa password non verrà cambiata.";
                 }
             }
             #endregion Check Password
@@ -452,15 +499,24 @@ namespace REST_API.Controllers
 
             if (string.IsNullOrWhiteSpace(errorMessage))
             {
-                var response = new { Id = user_to_edit.id, Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
-                    Status = "updated successfully" };
+                var response = new
+                {
+                    Id = user_to_edit.id,
+                    Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
+                    Status = "aggiornato con successo"
+                };
                 var res = Request.CreateResponse(HttpStatusCode.OK, response);
                 return res;
             }
             else
             {
-                var response = new { Id = user_to_edit.id, Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
-                    Status = "updated successfully", Message = errorMessage };
+                var response = new
+                {
+                    Id = user_to_edit.id,
+                    Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(user_to_edit.username + ":" + Security.Decrypt(user_to_edit.password, Security.toCheck))),
+                    Status = "aggiornato con successo",
+                    Message = errorMessage
+                };
                 var res = Request.CreateResponse(HttpStatusCode.OK, response);
                 return res;
             }
@@ -480,7 +536,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.Where(us => us.id == id).FirstOrDefault();
                     if (user != null)
@@ -489,7 +545,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "User with id: " + id + " was not found!");
+                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Utente con id: " + id + " non trovato!");
                     }
                 }
             }
@@ -511,7 +567,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     var user = entities.Users.Where(us => us.username == username).FirstOrDefault();
                     if (user != null)
@@ -520,7 +576,7 @@ namespace REST_API.Controllers
                     }
                     else
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "User with username: " + username + " was not found!");
+                        return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Utente con nome utente: " + username + " non trovato!");
                     }
                 }
             }
@@ -536,21 +592,21 @@ namespace REST_API.Controllers
         /// <param name="entities">The database entities</param>
         /// <param name="user">The user to delete</param>
         /// <returns></returns>
-        private HttpResponseMessage Delete(DatabaseEntities entities, Users user)
+        private HttpResponseMessage Delete(InSaluteEntities entities, Users user)
         {
             IPrincipal principal = Thread.CurrentPrincipal;
             if (principal.IsInRole("manager"))
             {
                 if (user.role.ToLower() == "admin" || user.role.ToLower() == "manager")
                 {
-                    return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "You don't have the permission to delete accounts with the same or higher permission than yours.");
+                    return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "Non hai i permessi per cancellare account con permessi più alti (o uguali) dei tuoi.");
                 }
             }
             else if (principal.IsInRole("user"))
             {
                 if (!((ClaimsIdentity)principal.Identity).HasClaim("Id", user.id.ToString()))
                 {
-                    return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "You don't have the permission to delete accounts that are not yours.");
+                    return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "Non hai i permessi per cancellare altri account.");
                 }
             }
             entities.Users.Remove(user);

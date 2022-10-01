@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using REST_API.Models;
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     IPrincipal principal = Thread.CurrentPrincipal;
                     if (!principal.IsInRole("admin"))
@@ -39,11 +39,26 @@ namespace REST_API.Controllers
                     List<Log> filteredResults = filters.Filter(entities.Log);
                     if (filteredResults.Count > 0)
                     {
-                        return Ok(filteredResults);
+                        List<dynamic> logs = new List<dynamic>();
+                        foreach (Log log in filteredResults)
+                        {
+                            var user = entities.Users.FirstOrDefault(us => us.id == log.user_id);
+                            if (user != null)
+                            {
+                                logs.Add(new
+                                {
+                                    Id = log.id,
+                                    Sender = user.username,
+                                    ReceiverEmail = log.receiver_email,
+                                    SendingTime = log.sending_time
+                                });
+                            }
+                        }
+                        return Ok(logs);
                     }
                     else
                     {
-                        return Content(HttpStatusCode.NotFound, "There are no logs in the database that meet the requirements.");
+                        return Content(HttpStatusCode.NotFound, "Non ci sono log nel database che soddisfano i requisiti.");
                     }
                 }
             }
@@ -67,7 +82,7 @@ namespace REST_API.Controllers
         {
             try
             {
-                using (DatabaseEntities entities = new DatabaseEntities())
+                using (InSaluteEntities entities = new InSaluteEntities())
                 {
                     #region ids maps
                     HashSet<long> ids = new HashSet<long>();
@@ -95,14 +110,14 @@ namespace REST_API.Controllers
                     #region User id check
                     if (log.user_id == 0)
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "You are missing the user id field, please provide one.");
+                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Manca il campo user id, per favore inseriscilo.");
                     }
                     #endregion User id check
 
                     #region Receiver email check
                     if (string.IsNullOrWhiteSpace(log.receiver_email))
                     {
-                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "You are missing the receiver email field, please provide one.");
+                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Manca il campo ricettore email, per favore inseriscilo.");
                     }
                     #endregion Receiver email check
 
@@ -116,8 +131,13 @@ namespace REST_API.Controllers
 
                     entities.Log.Add(log);
                     entities.SaveChanges();
-                    var response = new { Id = log.id, UserId = log.user_id, ReceiverEmail = log.receiver_email,
-                        SendingDate = log.sending_time.ToString("dd/MM/yyyy") };
+                    var response = new
+                    {
+                        Id = log.id,
+                        UserId = log.user_id,
+                        ReceiverEmail = log.receiver_email,
+                        SendingDate = log.sending_time.ToString("dd/MM/yyyy")
+                    };
                     return Request.CreateResponse(HttpStatusCode.Created, response);
                 }
             }

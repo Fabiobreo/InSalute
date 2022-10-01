@@ -10,7 +10,7 @@
              xmlns:vc="clr-namespace:InSalute.ValueConverters"
              d:DataContext="{d:DesignInstance Type=viewmodel:CoreViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="1200" d:DesignWidth="1000">
+             d:DesignHeight="800" d:DesignWidth="960">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="booleanVisibilityConverter"/>
         <vc:VisibleIfFalseConverter x:Key="visibleIfFalseConverter"/>
@@ -53,18 +53,24 @@
                         <Image x:Name="CurrentUserIcon" Width="30" Height="30" Source="../Resources/Images/user.png" RenderOptions.BitmapScalingMode="Fant"/>
                     </StackPanel>
                 </MenuItem.Header>
-                <MenuItem Header="Manage account" Command="{Binding NavigateUserCommand}">
+                <MenuItem Header="Gestisci profilo" Command="{Binding NavigateUserCommand}">
                     <MenuItem.Icon>
                         <Image Source="../Resources/Images/settings.png" RenderOptions.BitmapScalingMode="Fant" Height="16" Width="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Manage all accounts" Command="{Binding NavigateManageUserCommand}" Visibility="{Binding Data.IsManageAllAccountVisible,
+                <MenuItem Header="Gestisci tutti i profili" Command="{Binding NavigateManageUserCommand}" Visibility="{Binding Data.IsManageAllAccountVisible,
                                         Source={StaticResource Proxy}, Converter={StaticResource booleanVisibilityConverter}}">
                     <MenuItem.Icon>
                         <Image Source="../Resources/Images/users.png" RenderOptions.BitmapScalingMode="Fant" Height="16" Width="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Logout" x:Name="LogoutMenuItem" Command="{Binding LogoutCommand}">
+                <MenuItem Header="Visualizza i log" Command="{Binding NavigateLogCommand}" Visibility="{Binding Data.IsLogVisible,
+                                        Source={StaticResource Proxy}, Converter={StaticResource booleanVisibilityConverter}}">
+                    <MenuItem.Icon>
+                        <Image Source="../Resources/Images/log.png" RenderOptions.BitmapScalingMode="Fant" Height="16" Width="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Esci" x:Name="LogoutMenuItem" Command="{Binding LogoutCommand}">
                     <MenuItem.Icon>
                         <Image Source="../Resources/Images/logout.png" RenderOptions.BitmapScalingMode="Fant" Height="16" Width="16"/>
                     </MenuItem.Icon>
@@ -107,7 +113,7 @@
 
                     <TextBox Grid.Row="2" Grid.Column="0" Style="{StaticResource TextBoxStyle}" Margin="6 0 6 12" Text="{Binding SenderEmail}"/>
                     <PasswordBox Grid.Row="2" Grid.Column="1" Style="{StaticResource PasswordBoxStyle}" Margin="6 0 6 12" utilities:PasswordHelper.Attach="True" 
-                                                                utilities:PasswordHelper.Password="{Binding Path=SenderPassword, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}"  Visibility="{Binding SenderPasswordVisible, Converter={StaticResource visibleIfFalseConverter}}"/>
+                                                                utilities:PasswordHelper.Password="{Binding Path=SenderPassword, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}" Visibility="{Binding SenderPasswordVisible, Converter={StaticResource visibleIfFalseConverter}}"/>
                     <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" Text="{Binding SenderPassword}" Margin="6 0 6 12" Visibility="{Binding SenderPasswordVisible, Converter={StaticResource booleanVisibilityConverter}}"/>
 
                     <CheckBox Grid.Row="2" Grid.Column="2" Style="{StaticResource CheckBoxStyle}" Content="Mostra password" Margin="0 0 6 12" IsChecked="{Binding SenderPasswordVisible}"/>

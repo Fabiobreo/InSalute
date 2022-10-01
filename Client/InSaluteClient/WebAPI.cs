@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace InSalute
 {
@@ -20,6 +21,7 @@ namespace InSalute
         /// <returns></returns>
         public static Task<HttpResponseMessage> GetCall(string url, Dictionary<string, string> query = null, string auth = "")
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             try
             {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -42,10 +44,12 @@ namespace InSalute
                     response = client.GetAsync(apiUrl);
                 }
                 response.Wait();
+                Mouse.OverrideCursor = null;
                 return response;
             }
             catch (Exception ex)
             {
+                Mouse.OverrideCursor = null;
                 throw ex;
             }
         }
@@ -60,6 +64,7 @@ namespace InSalute
         /// <returns></returns>
         public static Task<HttpResponseMessage> PostCall<T>(string url, T model, string auth = "") where T : class
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             try
             {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -74,10 +79,12 @@ namespace InSalute
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 Task<HttpResponseMessage> response = client.PostAsJsonAsync(apiUrl, model);
                 response.Wait();
+                Mouse.OverrideCursor = null;
                 return response;
             }
             catch (Exception ex)
             {
+                Mouse.OverrideCursor = null;
                 throw ex;
             }
         }
@@ -93,6 +100,7 @@ namespace InSalute
         /// <returns></returns>
         public static Task<HttpResponseMessage> PutCall<T>(string url, Dictionary<string, string> query, T model, string auth = "") where T : class
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             try
             {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -107,10 +115,12 @@ namespace InSalute
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 Task<HttpResponseMessage> response = client.PutAsJsonAsync(QueryHelpers.AddQueryString(apiUrl, query), model);
                 response.Wait();
+                Mouse.OverrideCursor = null;
                 return response;
             }
             catch (Exception ex)
             {
+                Mouse.OverrideCursor = null;
                 throw ex;
             }
         }
@@ -124,6 +134,7 @@ namespace InSalute
         /// <returns></returns>
         public static Task<HttpResponseMessage> DeleteCall(string url, Dictionary<string, string> query = null, string auth = "")
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             try
             {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -146,10 +157,12 @@ namespace InSalute
                     response = client.DeleteAsync(apiUrl);
                 }
                 response.Wait();
+                Mouse.OverrideCursor = null;
                 return response;
             }
             catch (Exception ex)
             {
+                Mouse.OverrideCursor = null;
                 throw ex;
             }
         }

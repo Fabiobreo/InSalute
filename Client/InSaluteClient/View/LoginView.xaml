@@ -5,29 +5,31 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:InSalute.ViewModel"
         xmlns:utils="clr-namespace:InSalute.Utilities"
+        xmlns:vc="clr-namespace:InSalute.ValueConverters"
         d:DataContext="{d:DesignInstance Type=local:LoginViewModel}"
         mc:Ignorable="d"
         Background="Transparent" FocusManager.FocusedElement="{ Binding ElementName=EmailLoginTextBox }">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="booleanVisibilityConverter"/>
+        <vc:VisibleIfFalseConverter x:Key="visibleIfFalseConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="400"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="65"/>
+            <RowDefinition Height="85"/>
             <RowDefinition Height="320"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- HEADER -->
         <Border x:Name="LoginHeaderBorder" Grid.Row="1" Grid.Column="1" Background="{StaticResource ThemeMainColor}" CornerRadius="8 8 0 0" BorderThickness="0">
-            <Label x:Name="LoginTitle" Content="LOGIN" Style="{StaticResource LabelTitle}"/>
+            <Label x:Name="LoginTitle" Content="LOGIN" FontSize="36" Style="{StaticResource LabelTitle}"/>
         </Border>
 
         <!-- HEADER -->
@@ -40,19 +42,32 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel x:Name="LoginStackPanel" Grid.Row="0" Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
-                    <Label Content="Username" Style="{StaticResource LabelStyle}" Foreground="#88939D" Margin="16 0"/>
-                    <TextBox TabIndex="0" x:Name="EmailLoginTextBox" Text="{Binding LoginUserName}" Style="{StaticResource TextBoxStyle}" Margin="16 0"/>
+                <DockPanel x:Name="LoginStackPanel" Grid.Row="0" Grid.Column="0" LastChildFill="False" Margin="0 16 0 0">
+                    <Label Content="Email/Nome Utente" Style="{StaticResource LabelStyle}" Foreground="#88939D" Margin="16 0" DockPanel.Dock="Top"/>
+                    <TextBox TabIndex="0" x:Name="EmailLoginTextBox" Text="{Binding LoginUserName}" Style="{StaticResource TextBoxStyle}" Margin="16 0" DockPanel.Dock="Top"/>
 
-                    <Label Content="Password" Style="{StaticResource LabelStyle}" Foreground="#88939D" Margin="16 24 6 0"/>
-                    <PasswordBox TabIndex="1" x:Name="PasswordLoginPasswordBox" utils:PasswordHelper.Attach="true"  Margin="16 0"
-                                 utils:PasswordHelper.Password="{Binding Path=LoginPassword,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}" Style="{StaticResource PasswordBoxStyle}" />
+                    <Label Content="Password" Style="{StaticResource LabelStyle}" Foreground="#88939D" Margin="16 24 16 0" DockPanel.Dock="Top"/>
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
 
-                </StackPanel>
+                        <PasswordBox TabIndex="1" Grid.Column="0" x:Name="PasswordLoginPasswordBox" utils:PasswordHelper.Attach="true"  Margin="16 0" DockPanel.Dock="Top"
+                                 utils:PasswordHelper.Password="{Binding Path=LoginPassword,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,NotifyOnValidationError=True}" Style="{StaticResource PasswordBoxStyle}"
+                                       Visibility="{Binding LoginPasswordVisible, Converter={StaticResource visibleIfFalseConverter}}"/>
 
-                <Button x:Name="LoginButton" Grid.Row="1" Grid.Column="0" Content="Login" Command="{Binding LoginButtonClicked}" Style="{StaticResource ButtonStyle}" Margin="16 0 16 2" Width="180" IsDefault="{Binding IsDefaultLogin}"/>
+                        <TextBox Grid.Column="0" Style="{StaticResource TextBoxStyle}" Text="{Binding LoginPassword}" Margin="16 0" Visibility="{Binding LoginPasswordVisible, Converter={StaticResource booleanVisibilityConverter}}"/>
+
+                        <CheckBox Grid.Column="1" Style="{StaticResource CheckBoxStyle}" Content="Mostra" Margin="0 0 16 0" IsChecked="{Binding LoginPasswordVisible}"/>
+                    </Grid>
+                    <CheckBox Style="{StaticResource CheckBoxStyle}" Content="Ricordami" Margin="16 0" IsChecked="{Binding RememberMe}"/>
+                </DockPanel>
+
+                <Button x:Name="LoginButton" Grid.Row="2" Grid.Column="0" Content="Login" Command="{Binding LoginButtonClicked}" Style="{StaticResource ButtonStyle}" Margin="16 0 16 2" Width="180" IsDefault="{Binding IsDefaultLogin}"/>
 
 
                 <Label Grid.Row="3" Grid.Column="0" Content="Poliambulatorio InSalute © 2022" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"

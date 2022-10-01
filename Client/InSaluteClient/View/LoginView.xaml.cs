@@ -1,4 +1,4 @@
-﻿using DataAccessLayer;
+﻿using BusinessLogic;
 using InSalute.Utilities;
 using Prism.Commands;
 using System;
