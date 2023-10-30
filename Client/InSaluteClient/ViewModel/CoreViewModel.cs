@@ -706,9 +706,9 @@ namespace InSalute.ViewModel
             securitySettings.PermitAssembleDocument = false;
             securitySettings.PermitExtractContent = false;
             securitySettings.PermitFormsFill = true;
-            securitySettings.PermitFullQualityPrint = false;
             securitySettings.PermitModifyDocument = true;
-            securitySettings.PermitPrint = false;
+            securitySettings.PermitPrint = true;
+            securitySettings.PermitFullQualityPrint = true;
 
             string secured_file = filename.Substring(0, filename.IndexOf(".pdf")) + "_encrypted.pdf";
             document.Save(secured_file);
