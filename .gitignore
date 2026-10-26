@@ -14,3 +14,13 @@ Server/BusinessLogic/obj/
 Server/BusinessLogic/bin/
 Server/.vs/
 Server/app.publish/
+
+# Nuova soluzione
+appsettings.Production.json
+*.user
+.vs/
+bin/
+obj/
+config.json
+*.pfx
+logs/
