@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/InSalute.Core/InSalute.Core.csproj" />
+    <Project Path="src/InSalute.Web/InSalute.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InSalute.Tests/InSalute.Tests.csproj" />
+  </Folder>
+</Solution>
