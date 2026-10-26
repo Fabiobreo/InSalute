@@ -1,3 +1,5 @@
+using InSalute.Core.Email;
+
 namespace InSalute.Core.Texts;
 
 /// <summary>Messaggi di errore/esito restituiti dai servizi.</summary>
@@ -25,4 +27,35 @@ public static class Messaggi
     public const string EmailNonValida = "L'indirizzo email non è valido.";
     public const string UsernameNonValido = "Il nome utente può contenere solo lettere, cifre e i simboli - . _ @ +.";
     public const string ErroreGenerico = "Si è verificato un errore imprevisto. Riprova; se continua, avvisa un amministratore.";
+
+    public const string HostObbligatorio = "Inserisci il server di posta (host).";
+    public const string PortaNonValida = "La porta deve essere un numero tra 1 e 65535.";
+    public const string SicurezzaNonValida = "Seleziona il tipo di connessione sicura.";
+    public const string MittenteNonValido = "L'indirizzo del mittente non è valido.";
+    public const string NomeMittenteTroppoLungo = "Il nome del mittente può avere al massimo 100 caratteri.";
+    public const string PasswordSmtpObbligatoria = "Inserisci la password del server di posta.";
+    public const string SmtpNonConfigurato = "Le impostazioni SMTP non sono ancora state configurate.";
+    public const string IndirizzoProvaNonValido = "L'indirizzo email di prova non è valido.";
+    public const string ModelloVuoto = "Oggetto e corpo del modello non possono essere vuoti.";
+    public const string ModelloOggettoTroppoLungo = "L'oggetto può avere al massimo 200 caratteri.";
+    public const string ModelloPasswordSenzaSegnaposto = "Il modello deve contenere {PASSWORD}.";
+    public const string ModelloRefertoConPassword = "Il modello del referto non può contenere la password.";
+    public const string ModelloNonTrovato = "Modello non trovato.";
+
+    public static string SegnapostoNonRiconosciuto(string placeholder) => $"Segnaposto non riconosciuto: {placeholder}.";
+
+    public static string SegnapostoRimasto(string placeholder) => $"Segnaposto non sostituito: {placeholder}.";
+
+    public const string OggettoEmailProva = "Email di prova InSalute";
+    public const string CorpoEmailProva = "Questa è un'email di prova inviata da InSalute. Se la ricevi, le impostazioni SMTP sono corrette.";
+
+    public static string PerErroreInvio(SendErrorCode code) => code switch
+    {
+        SendErrorCode.AuthenticationFailed => "Il server di posta ha rifiutato le credenziali. Avvisa un amministratore di controllare le impostazioni SMTP.",
+        SendErrorCode.ConnectionFailed => "Impossibile collegarsi al server di posta. Controlla la connessione a Internet e riprova.",
+        SendErrorCode.RecipientRejected => "Il server di posta ha rifiutato l'indirizzo del destinatario. Controlla l'email del paziente.",
+        SendErrorCode.MessageTooLarge => "Gli allegati sono troppo grandi per il server di posta. Riduci il numero o la dimensione dei file.",
+        SendErrorCode.Timeout => "Il server di posta non ha risposto in tempo. Riprova tra qualche minuto.",
+        _ => "Si è verificato un errore durante l'invio. Riprova; se il problema continua avvisa un amministratore.",
+    };
 }

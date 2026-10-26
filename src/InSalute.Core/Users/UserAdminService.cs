@@ -31,14 +31,12 @@ public sealed record UserListItem(
 public sealed record UserProfile(string DisplayName, string UserName, string Email, string Role);
 
 /// <summary>
-/// Gestione utenti. Ogni metodo ricava l'utente corrente solo da <see cref="ICurrentUser"/> (Id dall'identità
-/// autenticata), poi ne rilegge ruolo e stato dal database: nessun permesso dipende da parametri della UI.
+/// Gestione utenti. Ogni metodo ricava l'utente corrente da <see cref="ActorProvider"/> (Id dall'identità autenticata,
+/// ruolo e stato riletti dal database): nessun permesso dipende da parametri della UI.
 /// </summary>
-public sealed class UserAdminService(AppDbContext db, UserManager<ApplicationUser> users, ICurrentUser currentUser)
+public sealed class UserAdminService(AppDbContext db, UserManager<ApplicationUser> users, ActorProvider actors)
 {
     private const int MaxDisplayNameLength = 100;
-
-    private sealed record Actor(ApplicationUser User, string Role);
 
     /// <summary>Ruoli che il ruolo indicato può vedere e gestire (creare, modificare, disattivare, reimpostare la password).</summary>
     public static IReadOnlyList<string> ManageableRoles(string actorRole) => actorRole switch
@@ -317,32 +315,9 @@ public sealed class UserAdminService(AppDbContext db, UserManager<ApplicationUse
         return OperationResult<string>.Ok(temporaryPassword);
     }
 
-    private async Task<Actor?> GetActorAsync(CancellationToken ct)
-    {
-        var info = await currentUser.GetAsync(ct);
-        if (info is null || string.IsNullOrEmpty(info.Id))
-        {
-            return null;
-        }
+    private Task<Actor?> GetActorAsync(CancellationToken ct) => actors.GetAsync(ct);
 
-        // Il DbContext vive quanto il circuito Blazor: ripartire sempre da dati freschi.
-        db.ChangeTracker.Clear();
-
-        var user = await users.FindByIdAsync(info.Id);
-        if (user is null || !user.IsActive || user.MustChangePassword)
-        {
-            return null;
-        }
-
-        var role = await GetSingleRoleAsync(user);
-        return role is null ? null : new Actor(user, role);
-    }
-
-    private async Task<string?> GetSingleRoleAsync(ApplicationUser user)
-    {
-        var roles = await users.GetRolesAsync(user);
-        return roles.Count == 1 ? roles[0] : null;
-    }
+    private Task<string?> GetSingleRoleAsync(ApplicationUser user) => actors.RoleOfAsync(user);
 
     /// <summary>
     /// Carica l'utente su cui agire. Un SuperAdmin è indistinguibile da un utente inesistente

@@ -7,6 +7,10 @@ namespace InSalute.Core.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
+    public DbSet<SmtpSettings> SmtpSettings => Set<SmtpSettings>();
+
+    public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

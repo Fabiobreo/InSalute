@@ -11,6 +11,7 @@ public static class IdentityServiceCollectionExtensions
     /// <summary>Identity con le regole di 5.3 e i servizi utenti. L'host aggiunge SignInManager e il resto dell'interfaccia.</summary>
     public static IdentityBuilder AddInSaluteIdentity(this IServiceCollection services)
     {
+        services.AddScoped<ActorProvider>();
         services.AddScoped<UserAdminService>();
         services.AddScoped<IdentitySeeder>();
 
