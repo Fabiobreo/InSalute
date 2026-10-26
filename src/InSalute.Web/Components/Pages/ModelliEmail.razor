@@ -1,3 +1,5 @@
+@using InSalute.Core.Security
+@attribute [Authorize(Policy = Policies.CanManageSettings)]
 @page "/impostazioni/modelli"
 
 <PageTitle>Modelli email · InSalute</PageTitle>

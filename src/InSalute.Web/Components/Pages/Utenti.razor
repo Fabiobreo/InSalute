@@ -1,5 +1,197 @@
 @page "/utenti"
+@using InSalute.Core.Security
+@using InSalute.Core.Users
+@using InSalute.Web.Components.Shared
+@using InSalute.Web.Services
+@attribute [Authorize(Policy = Policies.CanManageUsers)]
+@inject UserAdminService UserAdmin
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>Utenti · InSalute</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Utenti</MudText>
+<div class="d-flex align-center mb-4">
+    <MudText Typo="Typo.h4" Class="flex-grow-1">Utenti</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+               OnClick="NewUserAsync">Nuovo utente</MudButton>
+</div>
+
+@if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_loadError</MudAlert>
+}
+
+<MudTable Items="_users" Loading="_loading" Hover="true" Dense="false" Breakpoint="Breakpoint.Sm"
+          LoadingProgressColor="Color.Primary">
+    <HeaderContent>
+        <MudTh>Nome visualizzato</MudTh>
+        <MudTh>Username</MudTh>
+        <MudTh>Email</MudTh>
+        <MudTh>Ruolo</MudTh>
+        <MudTh>Stato</MudTh>
+        <MudTh>Creato il</MudTh>
+        <MudTh>Azioni</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nome visualizzato">@context.DisplayName</MudTd>
+        <MudTd DataLabel="Username">@context.UserName</MudTd>
+        <MudTd DataLabel="Email">@context.Email</MudTd>
+        <MudTd DataLabel="Ruolo">@context.Role</MudTd>
+        <MudTd DataLabel="Stato">
+            @if (context.IsActive)
+            {
+                <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Text">Attivo</MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Text">Disattivato</MudChip>
+            }
+        </MudTd>
+        <MudTd DataLabel="Creato il">@DateDisplay.ToLocalText(context.CreatedAt)</MudTd>
+        <MudTd DataLabel="Azioni">
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert" AriaLabel="@($"Azioni per {context.DisplayName}")"
+                     title="Azioni" Dense="true">
+                @if (context.CanEdit)
+                {
+                    <MudMenuItem OnClick="() => EditAsync(context)">Modifica</MudMenuItem>
+                }
+                @if (context.CanResetPassword)
+                {
+                    <MudMenuItem OnClick="() => ResetPasswordAsync(context)">Reimposta password</MudMenuItem>
+                }
+                @if (context.CanToggleActive)
+                {
+                    <MudMenuItem OnClick="() => ToggleActiveAsync(context)">@(context.IsActive ? "Disattiva" : "Riattiva")</MudMenuItem>
+                }
+            </MudMenu>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>Nessun utente da mostrare.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    private IReadOnlyList<UserListItem> _users = [];
+    private bool _loading = true;
+    private string? _loadError;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await UserAdmin.ListAsync();
+        _users = result.Value ?? [];
+        _loadError = result.Succeeded ? null : result.Error;
+        _loading = false;
+    }
+
+    private async Task NewUserAsync()
+    {
+        var roles = await UserAdmin.GetAssignableRolesAsync();
+        var parameters = new DialogParameters<UtenteDialog> { { x => x.Roles, roles } };
+        var dialog = await DialogService.ShowAsync<UtenteDialog>("Nuovo utente", parameters, DialogOptions());
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: CreatedUser created })
+        {
+            await LoadAsync();
+            await ShowTemporaryPasswordAsync(created.TemporaryPassword);
+        }
+    }
+
+    private async Task EditAsync(UserListItem item)
+    {
+        var parameters = new DialogParameters<UtenteDialog>
+        {
+            { x => x.Item, item },
+            { x => x.Roles, await UserAdmin.GetAssignableRolesAsync() }
+        };
+        var dialog = await DialogService.ShowAsync<UtenteDialog>($"Modifica {item.DisplayName}", parameters, DialogOptions());
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add("Utente aggiornato.", Severity.Success);
+            await LoadAsync();
+        }
+    }
+
+    private async Task ResetPasswordAsync(UserListItem item)
+    {
+        var confirmed = await ConfirmAsync(
+            "Reimposta password",
+            $"Verrà generata una nuova password temporanea per {item.DisplayName}. La password attuale non funzionerà più.",
+            "Reimposta password");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var result = await UserAdmin.ResetPasswordAsync(item.Id);
+        if (result.Succeeded)
+        {
+            await ShowTemporaryPasswordAsync(result.Value!);
+        }
+        else
+        {
+            ShowError(result.Error);
+        }
+    }
+
+    private async Task ToggleActiveAsync(UserListItem item)
+    {
+        if (item.IsActive)
+        {
+            var confirmed = await ConfirmAsync(
+                "Disattiva utente",
+                $"{item.DisplayName} non potrà più accedere. Potrai riattivarlo in qualsiasi momento.",
+                "Disattiva");
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+
+        var result = await UserAdmin.SetActiveAsync(item.Id, !item.IsActive);
+        if (result.Succeeded)
+        {
+            Snackbar.Add(item.IsActive ? "Utente disattivato." : "Utente riattivato.", Severity.Success);
+            await LoadAsync();
+        }
+        else
+        {
+            ShowError(result.Error);
+        }
+    }
+
+    private async Task<bool> ConfirmAsync(string title, string message, string confirmText)
+    {
+        var parameters = new DialogParameters<ConfermaDialog>
+        {
+            { x => x.Message, message },
+            { x => x.ConfirmText, confirmText }
+        };
+        var dialog = await DialogService.ShowAsync<ConfermaDialog>(title, parameters, DialogOptions());
+        var result = await dialog.Result;
+        return result is { Canceled: false };
+    }
+
+    private async Task ShowTemporaryPasswordAsync(string password)
+    {
+        var parameters = new DialogParameters<PasswordTemporaneaDialog> { { x => x.Password, password } };
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false,
+            CloseOnEscapeKey = false
+        };
+        var dialog = await DialogService.ShowAsync<PasswordTemporaneaDialog>("Password temporanea", parameters, options);
+        await dialog.Result;
+    }
+
+    private void ShowError(string? error) =>
+        Snackbar.Add(error ?? "Operazione non riuscita.", Severity.Error, config => config.RequireInteraction = true);
+
+    private static DialogOptions DialogOptions() => new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+}

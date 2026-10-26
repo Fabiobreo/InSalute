@@ -1,5 +1,42 @@
 @page "/profilo"
+@using InSalute.Core.Users
+@inject UserAdminService UserAdmin
 
 <PageTitle>Profilo · InSalute</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-4">Profilo</MudText>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error">@_error</MudAlert>
+}
+else if (_profile is not null)
+{
+    <MudPaper Class="pa-4" Style="max-width: 600px;">
+        <dl class="profile-list">
+            <dt>Nome visualizzato</dt>
+            <dd>@_profile.DisplayName</dd>
+            <dt>Username</dt>
+            <dd>@_profile.UserName</dd>
+            <dt>Email</dt>
+            <dd>@_profile.Email</dd>
+            <dt>Ruolo</dt>
+            <dd>@_profile.Role</dd>
+        </dl>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="Account/Manage/ChangePassword" Class="mt-4">
+            Cambia password
+        </MudButton>
+    </MudPaper>
+}
+
+@code {
+    private UserProfile? _profile;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await UserAdmin.GetProfileAsync();
+        _profile = result.Value;
+        _error = result.Succeeded ? null : result.Error;
+    }
+}

@@ -70,8 +70,7 @@ h1:focus {
     margin-bottom: 4px;
 }
 
-.account-card input[type=text],
-.account-card input[type=password] {
+.account-card input:not([type=hidden]) {
     width: 100%;
     box-sizing: border-box;
     padding: 10px 12px;
@@ -91,6 +90,23 @@ h1:focus {
     border: 0;
     border-radius: 6px;
     cursor: pointer;
+}
+
+.account-card .secondary-action {
+    margin-top: 12px;
+}
+
+.account-card .secondary-action button[type=submit] {
+    color: #3375B0;
+    background: transparent;
+    border: 1px solid #3375B0;
+}
+
+.account-card input:focus-visible,
+.account-card button:focus-visible,
+.account-card a:focus-visible {
+    outline: 3px solid #1F4F7A;
+    outline-offset: 2px;
 }
 
 .account-card a {
@@ -137,4 +153,19 @@ h1:focus {
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
+}
+
+.profile-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 24px;
+    margin: 0;
+}
+
+.profile-list dt {
+    color: #5F6B76;
+}
+
+.profile-list dd {
+    margin: 0;
 }

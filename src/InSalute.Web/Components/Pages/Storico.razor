@@ -1,3 +1,5 @@
+@using InSalute.Core.Security
+@attribute [Authorize(Policy = Policies.CanSend)]
 @page "/storico"
 
 <PageTitle>Storico invii · InSalute</PageTitle>

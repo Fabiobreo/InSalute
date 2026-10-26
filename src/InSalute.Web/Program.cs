@@ -1,8 +1,11 @@
 using System.Globalization;
 using InSalute.Core.Data;
 using InSalute.Core.Domain;
+using InSalute.Core.Security;
+using InSalute.Core.Users;
 using InSalute.Web.Components;
 using InSalute.Web.Components.Account;
+using InSalute.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -23,7 +26,7 @@ CultureInfo.DefaultThreadCurrentUICulture = italian;
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config => config.SnackbarConfiguration.VisibleStateDuration = 4000);
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
@@ -36,18 +39,38 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-builder.Services.AddAuthorizationBuilder()
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.SlidingExpiration = true;
+});
+
+// Un utente disattivato o con ruolo cambiato perde l'accesso entro un minuto.
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+    options.ValidationInterval = TimeSpan.FromMinutes(1));
+
+var authorization = builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+foreach (var (policy, roles) in Policies.RolesByPolicy)
+{
+    authorization.AddPolicy(policy, p => p.RequireRole(roles));
+}
 
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' not found.");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddIdentityCore<ApplicationUser>()
-    .AddEntityFrameworkStores<AppDbContext>()
+builder.Services.AddInSaluteIdentity()
     .AddSignInManager()
-    .AddDefaultTokenProviders();
+    .AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>();
+
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 var app = builder.Build();
 
@@ -64,6 +87,9 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseMiddleware<MustChangePasswordMiddleware>();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets().AllowAnonymous();
@@ -71,5 +97,11 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapAdditionalIdentityEndpoints();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var bootstrap = builder.Configuration.GetSection("Bootstrap").Get<BootstrapOptions>() ?? new BootstrapOptions();
+    await scope.ServiceProvider.GetRequiredService<IdentitySeeder>().SeedAsync(bootstrap);
+}
 
 app.Run();

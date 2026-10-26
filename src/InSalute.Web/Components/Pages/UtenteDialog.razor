@@ -1,0 +1,108 @@
+@using InSalute.Core.Users
+@inject UserAdminService UserAdmin
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="this" Class="d-flex flex-column gap-2">
+            <MudTextField @bind-Value="_displayName" Label="Nome visualizzato" Required="true"
+                          RequiredError="Inserisci il nome visualizzato." MaxLength="100" Immediate="true" />
+            <MudTextField @bind-Value="_userName" Label="Username" Required="true"
+                          RequiredError="Inserisci il nome utente." Disabled="@(Item?.IsCurrentUser ?? false)"
+                          HelperText="@((Item?.IsCurrentUser ?? false) ? "Non puoi cambiare il tuo nome utente." : null)" />
+            <MudTextField @bind-Value="_email" Label="Email" InputType="InputType.Email" Required="true"
+                          RequiredError="Inserisci l'indirizzo email." />
+            <MudSelect T="string" @bind-Value="_role" Label="Ruolo" Required="true" RequiredError="Seleziona il ruolo."
+                       Disabled="@(Item is not null && !Item.CanChangeRole)">
+                @foreach (var role in AvailableRoles)
+                {
+                    <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
+                }
+            </MudSelect>
+        </MudForm>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Annulla</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_saving">
+            @(Item is null ? "Crea utente" : "Salva")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm _form = default!;
+    private string _displayName = "";
+    private string _userName = "";
+    private string _email = "";
+    private string? _role;
+    private string? _error;
+    private bool _saving;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    /// <summary>Utente da modificare; null per un nuovo utente.</summary>
+    [Parameter]
+    public UserListItem? Item { get; set; }
+
+    /// <summary>Ruoli che l'utente corrente può assegnare.</summary>
+    [Parameter]
+    public IReadOnlyList<string> Roles { get; set; } = [];
+
+    // In modifica, un ruolo non modificabile (es. il proprio) deve comunque comparire nell'elenco.
+    private IEnumerable<string> AvailableRoles =>
+        Item is { CanChangeRole: false } ? [Item.Role] : Roles.Where(r => r != InSalute.Core.Domain.Roles.SuperAdmin || Item is null);
+
+    protected override void OnInitialized()
+    {
+        if (Item is not null)
+        {
+            _displayName = Item.DisplayName;
+            _userName = Item.UserName;
+            _email = Item.Email;
+            _role = Item.Role;
+        }
+        else if (Roles.Count == 1)
+        {
+            _role = Roles[0];
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        if (Item is null)
+        {
+            var result = await UserAdmin.CreateAsync(new CreateUserRequest(_displayName, _userName, _email, _role!));
+            if (result.Succeeded)
+            {
+                MudDialog.Close(DialogResult.Ok(result.Value!));
+                return;
+            }
+            _error = result.Error;
+        }
+        else
+        {
+            var result = await UserAdmin.UpdateAsync(new UpdateUserRequest(Item.Id, _displayName, _userName, _email, _role!));
+            if (result.Succeeded)
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                return;
+            }
+            _error = result.Error;
+        }
+        _saving = false;
+    }
+}

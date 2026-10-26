@@ -1,3 +1,5 @@
+@using InSalute.Core.Security
+@attribute [Authorize(Policy = Policies.CanManageSettings)]
 @page "/impostazioni/smtp"
 
 <PageTitle>Impostazioni SMTP · InSalute</PageTitle>

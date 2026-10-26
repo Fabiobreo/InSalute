@@ -1,13 +1,15 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using InSalute.Core.Domain
+@using InSalute.Core.Texts
 
 @attribute [AllowAnonymous]
 
 @inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Accedi · InSalute</PageTitle>
@@ -17,7 +19,7 @@
 <StatusMessage Message="@errorMessage" />
 <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
     <DataAnnotationsValidator />
-    <label for="Input.UserName">Nome utente</label>
+    <label for="Input.UserName">Nome utente o email</label>
     <InputText @bind-Value="Input.UserName" id="Input.UserName" autocomplete="username" aria-required="true" />
     <ValidationMessage For="() => Input.UserName" />
     <label for="Input.Password">Password</label>
@@ -58,19 +60,32 @@
             return;
         }
 
-        var result = await SignInManager.PasswordSignInAsync(Input.UserName, Input.Password, isPersistent: false, lockoutOnFailure: false);
-
-        if (result.Succeeded)
+        var login = Input.UserName.Trim();
+        var user = await UserManager.FindByNameAsync(login) ?? await UserManager.FindByEmailAsync(login);
+        if (user is null)
         {
-            RedirectManager.RedirectTo(ReturnUrl);
+            errorMessage = "Errore: " + Messaggi.CredenzialiNonValide;
+            return;
         }
-        else if (result.IsLockedOut)
+
+        // La password si verifica prima dello stato dell'account, così "disattivato" non rivela l'esistenza dell'utente.
+        var result = await SignInManager.CheckPasswordSignInAsync(user, Input.Password, lockoutOnFailure: true);
+        if (result.IsLockedOut)
         {
             RedirectManager.RedirectTo("Account/Lockout");
         }
+        else if (!result.Succeeded)
+        {
+            errorMessage = "Errore: " + Messaggi.CredenzialiNonValide;
+        }
+        else if (!user.IsActive)
+        {
+            errorMessage = "Errore: " + Messaggi.AccountDisattivato;
+        }
         else
         {
-            errorMessage = "Errore: nome utente o password non corretti.";
+            await SignInManager.SignInAsync(user, isPersistent: false);
+            RedirectManager.RedirectTo(ReturnUrl);
         }
     }
 
