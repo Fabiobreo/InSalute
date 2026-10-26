@@ -1,0 +1,10 @@
+@page "/storico/{id:guid}"
+
+<PageTitle>Dettaglio invio · InSalute</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Dettaglio invio</MudText>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+}

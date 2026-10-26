@@ -1,0 +1,24 @@
+﻿@page "/Error"
+@using System.Diagnostics
+@attribute [AllowAnonymous]
+@layout AccountLayout
+
+<PageTitle>Errore · InSalute</PageTitle>
+
+<h1>Errore</h1>
+<p>Si è verificato un errore imprevisto. Riprova; se continua, avvisa un amministratore.</p>
+@if (ShowRequestId)
+{
+    <p>Codice: <code>@RequestId</code></p>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

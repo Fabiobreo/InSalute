@@ -1,0 +1,140 @@
+@font-face {
+    font-family: 'Roboto';
+    font-weight: 300;
+    src: url('../fonts/Roboto-Light.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Roboto';
+    font-weight: 400;
+    src: url('../fonts/Roboto-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Roboto';
+    font-weight: 500;
+    src: url('../fonts/Roboto-Medium.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Roboto';
+    font-weight: 700;
+    src: url('../fonts/Roboto-Bold.ttf') format('truetype');
+}
+
+html, body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #FAFAFA;
+    color: #1F2A33;
+}
+
+h1:focus {
+    outline: none;
+}
+
+/* Pagine di account (rendering statico, senza MudBlazor) */
+.account-page {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.account-card {
+    width: 100%;
+    max-width: 420px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    padding: 32px;
+}
+
+.account-card .logo {
+    display: block;
+    margin: 0 auto 16px;
+    max-width: 160px;
+}
+
+.account-card h1 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    text-align: center;
+    margin: 0 0 24px;
+}
+
+.account-card label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.account-card input[type=text],
+.account-card input[type=password] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font: inherit;
+    border: 1px solid #5F6B76;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.account-card button[type=submit] {
+    width: 100%;
+    padding: 12px;
+    font: inherit;
+    font-weight: 500;
+    color: #FFFFFF;
+    background: #3375B0;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.account-card a {
+    color: #3375B0;
+}
+
+.account-card .alert {
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.account-card .alert-danger {
+    background: #FDECEA;
+    color: #C62828;
+}
+
+.account-card .alert-success {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+.validation-message {
+    color: #C62828;
+    font-size: 0.875rem;
+    margin: -8px 0 12px;
+}
+
+#blazor-error-ui {
+    background: #FFF4C2;
+    color: #1F2A33;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 2000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
