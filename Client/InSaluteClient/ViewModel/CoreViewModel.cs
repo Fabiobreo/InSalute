@@ -453,7 +453,6 @@ namespace InSalute.ViewModel
                     else
                     {
                         MessageBox.Show("C'è stato un errore durante l'invio della prima email, riprova ad inviarla.", "Errore durante l'invio", MessageBoxButton.OK, MessageBoxImage.Error);
-                        EmailSentCorrectly = false;
                     }
                 }
                 else
@@ -559,19 +558,23 @@ namespace InSalute.ViewModel
             }
             catch (Exception ex)
             {
+                success = false;
                 MessageBox.Show(ex.Message);
             }
 
             try
             {
-                Dictionary<string, string> parameters = new Dictionary<string, string>()
+                if (success)
                 {
-                    ["user_id"] = UserStore.CurrentUser.Id.ToString(),
-                    ["receiver_email"] = receiver,
-                    ["sending_time"] = DateTime.Now.ToString(CultureInfo.InvariantCulture)
-                };
+                    Dictionary<string, string> parameters = new Dictionary<string, string>()
+                    {
+                        ["user_id"] = UserStore.CurrentUser.Id.ToString(),
+                        ["receiver_email"] = receiver,
+                        ["sending_time"] = DateTime.Now.ToString(CultureInfo.InvariantCulture)
+                    };
 
-                Task<HttpResponseMessage> logDetails = WebAPI.PostCall(API_URIs.log, parameters, UserStore.CurrentUser.Token);
+                    Task<HttpResponseMessage> logDetails = WebAPI.PostCall(API_URIs.log, parameters, UserStore.CurrentUser.Token);
+                }
             }
             catch (Exception ex)
             {

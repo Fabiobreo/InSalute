@@ -64,7 +64,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Content(HttpStatusCode.BadRequest, ex);
+                return Content(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
         #endregion GET
@@ -143,7 +143,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
         #endregion POST

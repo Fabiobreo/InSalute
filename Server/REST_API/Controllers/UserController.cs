@@ -43,7 +43,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Content(HttpStatusCode.BadRequest, ex);
+                return Content(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
 
@@ -74,7 +74,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Content(HttpStatusCode.BadRequest, ex);
+                return Content(HttpStatusCode.InternalServerError, "Errore interno.");
 
             }
         }
@@ -89,7 +89,6 @@ namespace REST_API.Controllers
                     Id = user.id,
                     Email = user.email,
                     Username = user.username,
-                    Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(Security.Decrypt(user.password, Security.toCheck))),
                     Role = user.role,
                     CreationDate = user.creation_date.ToString("MM/dd/yyyy HH:mm:ss")
                 });
@@ -179,7 +178,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Content(HttpStatusCode.BadRequest, ex);
+                return Content(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
         #endregion GET
@@ -194,18 +193,6 @@ namespace REST_API.Controllers
         [Authorization(Roles = "admin, manager")]
         [HttpPost]
         public HttpResponseMessage PostAuth([FromBody] Users user)
-        {
-            return Post(user);
-        }
-
-        /// <summary>
-        /// Register as a new user
-        /// </summary>
-        /// <param name="user">details of the user to create (username, password, email)</param>
-        /// <returns>details of newly created user (id, email, creation date)</returns>
-        [Route("api/user/register")]
-        [HttpPost]
-        public HttpResponseMessage PostNoAuth([FromBody] Users user)
         {
             return Post(user);
         }
@@ -324,7 +311,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
         #endregion POST
@@ -358,7 +345,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
 
@@ -390,7 +377,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
 
@@ -414,7 +401,7 @@ namespace REST_API.Controllers
             }
             else if (principal.IsInRole("manager"))
             {
-                if (user_to_edit.id != edited_user.id)
+                if (!((ClaimsIdentity)principal.Identity).HasClaim("Id", user_to_edit.id.ToString()))
                 {
                     if (user_to_edit.role.ToLower() == "admin" || user_to_edit.role.ToLower() == "manager")
                     {
@@ -483,7 +470,7 @@ namespace REST_API.Controllers
             #region Check Password and encryption
             if (!string.IsNullOrWhiteSpace(edited_user.password))
             {
-                if (((ClaimsIdentity)principal.Identity).HasClaim("Id", edited_user.id.ToString()))
+                if (((ClaimsIdentity)principal.Identity).HasClaim("Id", user_to_edit.id.ToString()))
                 {
                     string frombase64pwd = Encoding.UTF8.GetString(Convert.FromBase64String(edited_user.password));
                     user_to_edit.password = Security.Encrypt(frombase64pwd, Security.toCheck);
@@ -551,7 +538,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
 
@@ -582,7 +569,7 @@ namespace REST_API.Controllers
             }
             catch (Exception ex)
             {
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Errore interno.");
             }
         }
 
