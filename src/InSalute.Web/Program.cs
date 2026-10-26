@@ -1,4 +1,5 @@
 using System.Globalization;
+using InSalute.Core;
 using InSalute.Core.Data;
 using InSalute.Core.Domain;
 using InSalute.Core.Security;
@@ -7,6 +8,7 @@ using InSalute.Web.Components;
 using InSalute.Web.Components.Account;
 using InSalute.Web.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -71,6 +73,18 @@ builder.Services.AddInSaluteIdentity()
     .AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>();
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+
+// Chiavi su disco, protette con DPAPI: servono anche a cifrare la password SMTP salvata nel database.
+// La cartella va inclusa nel backup (vedi docs/piano-rifacimento.md, sezione 9).
+var dataProtection = builder.Services.AddDataProtection()
+    .SetApplicationName("InSalute")
+    .PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["Storage:KeysPath"] ?? @"C:\InSaluteData\keys"));
+if (OperatingSystem.IsWindows())
+{
+    dataProtection.ProtectKeysWithDpapi();
+}
+
+builder.Services.AddInSaluteSettings();
 
 var app = builder.Build();
 

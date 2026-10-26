@@ -1,7 +1,208 @@
-@using InSalute.Core.Security
-@attribute [Authorize(Policy = Policies.CanManageSettings)]
 @page "/impostazioni/smtp"
+@using InSalute.Core.Domain
+@using InSalute.Core.Email
+@using InSalute.Core.Security
+@using InSalute.Core.Settings
+@using InSalute.Core.Texts
+@using InSalute.Core.Users
+@attribute [Authorize(Policy = Policies.CanManageSettings)]
+@inject SmtpSettingsService SmtpSettingsService
+@inject UserAdminService UserAdmin
+@inject ISnackbar Snackbar
 
 <PageTitle>Impostazioni SMTP · InSalute</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-4">Impostazioni SMTP</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" aria-label="Caricamento" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudPaper Class="pa-4 mb-6" Style="max-width: 720px;">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Server di posta</MudText>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <MudText Typo="Typo.body2" Class="align-self-center">Compila con:</MudText>
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => ApplyPreset("smtps.aruba.it", 465, SmtpSecurity.SslOnConnect))">Aruba</MudButton>
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => ApplyPreset("smtp.gmail.com", 587, SmtpSecurity.StartTls))">Gmail</MudButton>
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => ApplyPreset("smtp.office365.com", 587, SmtpSecurity.StartTls))">Outlook / Microsoft 365</MudButton>
+        </div>
+
+        <MudForm @ref="_form" Class="d-flex flex-column gap-2">
+            <MudTextField @bind-Value="_host" Label="Server (host)" Required="true" RequiredError="Inserisci il server di posta (host)." />
+            <MudNumericField T="int" @bind-Value="_port" Label="Porta" Min="1" Max="65535" Required="true"
+                             Validation="@((Func<int, string?>)ValidatePort)" HideSpinButtons="true" />
+            <MudSelect T="SmtpSecurity" @bind-Value="_security" Label="Sicurezza della connessione">
+                <MudSelectItem T="SmtpSecurity" Value="SmtpSecurity.SslOnConnect">SSL/TLS diretto (di solito porta 465)</MudSelectItem>
+                <MudSelectItem T="SmtpSecurity" Value="SmtpSecurity.StartTls">STARTTLS (di solito porta 587)</MudSelectItem>
+            </MudSelect>
+            <MudTextField @bind-Value="_userName" Label="Nome utente" autocomplete="off"
+                          HelperText="Lascia vuoto solo se il server non richiede autenticazione." />
+            <MudTextField @bind-Value="_newPassword" Label="@(_hasPassword ? "Nuova password (lascia vuoto per non cambiarla)" : "Password")"
+                          InputType="InputType.Password" autocomplete="new-password"
+                          HelperText="@(_hasPassword ? "Password impostata ✓" : null)" />
+            <MudTextField @bind-Value="_fromAddress" Label="Indirizzo mittente" InputType="InputType.Email" Required="true"
+                          RequiredError="Inserisci l'indirizzo del mittente." />
+            <MudTextField @bind-Value="_fromName" Label="Nome mittente" MaxLength="100" />
+        </MudForm>
+
+        @if (_saveError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@_saveError</MudAlert>
+        }
+
+        <div class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_saving">Salva impostazioni</MudButton>
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Style="max-width: 720px;">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Email di prova</MudText>
+        <MudText Typo="Typo.body2" Class="mb-2">Invia un messaggio di prova con le impostazioni salvate.</MudText>
+        <MudTextField @bind-Value="_testAddress" Label="Indirizzo di destinazione" InputType="InputType.Email" />
+        <div class="mt-2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SendTestAsync" Disabled="_testing || !_configured">
+                @if (_testing)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Invia email di prova
+            </MudButton>
+            @if (!_configured)
+            {
+                <MudText Typo="Typo.caption" Class="ml-2">Salva prima le impostazioni.</MudText>
+            }
+        </div>
+
+        @if (_testMessage is not null)
+        {
+            <MudAlert Severity="@(_testSucceeded ? Severity.Success : Severity.Error)" Class="mt-4">@_testMessage</MudAlert>
+            @if (_testDetails is not null)
+            {
+                <details class="mt-2">
+                    <summary>Dettagli tecnici</summary>
+                    <pre style="white-space: pre-wrap;">@_testDetails</pre>
+                </details>
+            }
+        }
+    </MudPaper>
+}
+
+@code {
+    private MudForm _form = default!;
+    private bool _loading = true;
+    private string? _loadError;
+    private string? _saveError;
+    private bool _saving;
+    private bool _configured;
+    private bool _hasPassword;
+
+    private string _host = "";
+    private int _port = 465;
+    private SmtpSecurity _security = SmtpSecurity.SslOnConnect;
+    private string _userName = "";
+    private string? _newPassword;
+    private string _fromAddress = "";
+    private string _fromName = "";
+
+    private string _testAddress = "";
+    private bool _testing;
+    private bool _testSucceeded;
+    private string? _testMessage;
+    private string? _testDetails;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await SmtpSettingsService.GetAsync();
+        if (!result.Succeeded)
+        {
+            _loadError = result.Error;
+        }
+        else if (result.Value is { } settings)
+        {
+            _host = settings.Host;
+            _port = settings.Port;
+            _security = settings.Security;
+            _userName = settings.UserName;
+            _hasPassword = settings.HasPassword;
+            _fromAddress = settings.FromAddress;
+            _fromName = settings.FromName;
+            _configured = true;
+        }
+
+        var profile = await UserAdmin.GetProfileAsync();
+        _testAddress = profile.Value?.Email ?? "";
+        _loading = false;
+    }
+
+    private static string? ValidatePort(int port) => port is < 1 or > 65535 ? Messaggi.PortaNonValida : null;
+
+    private void ApplyPreset(string host, int port, SmtpSecurity security)
+    {
+        _host = host;
+        _port = port;
+        _security = security;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saveError = null;
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _saving = true;
+        var result = await SmtpSettingsService.SaveAsync(
+            new SmtpSettingsInput(_host, _port, _security, _userName, _newPassword, _fromAddress, _fromName));
+        _saving = false;
+
+        if (result.Succeeded)
+        {
+            _configured = true;
+            _hasPassword = _hasPassword || !string.IsNullOrEmpty(_newPassword);
+            if (string.IsNullOrWhiteSpace(_userName))
+            {
+                _hasPassword = false;
+            }
+            _newPassword = null;
+            Snackbar.Add("Impostazioni salvate.", Severity.Success);
+        }
+        else
+        {
+            _saveError = result.Error;
+        }
+    }
+
+    private async Task SendTestAsync()
+    {
+        _testing = true;
+        _testMessage = null;
+        _testDetails = null;
+        var result = await SmtpSettingsService.SendTestEmailAsync(_testAddress);
+        _testing = false;
+
+        if (!result.Succeeded)
+        {
+            _testSucceeded = false;
+            _testMessage = result.Error;
+        }
+        else if (result.Value!.Success)
+        {
+            _testSucceeded = true;
+            _testMessage = $"Email di prova inviata a {_testAddress.Trim()}.";
+        }
+        else
+        {
+            _testSucceeded = false;
+            _testMessage = Messaggi.PerErroreInvio(result.Value.ErrorCode);
+            _testDetails = result.Value.TechnicalDetails;
+        }
+    }
+}

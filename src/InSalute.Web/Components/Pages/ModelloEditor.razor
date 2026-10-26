@@ -1,0 +1,96 @@
+@using InSalute.Core.Domain
+@using InSalute.Core.Settings
+@inject EmailTemplateService Templates
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<MudGrid>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="State.Subject" Label="Oggetto" Immediate="true" MaxLength="200" Class="mb-2" />
+        <MudTextField @bind-Value="State.Body" Label="Corpo" Lines="9" Immediate="true"
+                      UserAttributes="@(new Dictionary<string, object> { ["id"] = BodyId })" />
+
+        <MudText Typo="Typo.subtitle2" Class="mt-4 mb-1">Segnaposto disponibili</MudText>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var placeholder in EmailTemplateService.PlaceholdersFor(State.Kind))
+            {
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => InsertAsync(placeholder))"
+                           aria-label="@($"Inserisci {placeholder}")">Inserisci @placeholder</MudButton>
+            }
+        </div>
+
+        @if (State.Error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@State.Error</MudAlert>
+        }
+
+        <div class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="State.Saving">Salva modello</MudButton>
+        </div>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudText Typo="Typo.subtitle2" Class="mb-1">Anteprima</MudText>
+        <MudPaper Outlined="true" Class="pa-4">
+            <MudText Typo="Typo.body2" Class="mb-2">Oggetto: <strong>@Preview.Subject</strong></MudText>
+            <MudText Style="white-space: pre-wrap;">@Preview.Body</MudText>
+        </MudPaper>
+        <MudText Typo="Typo.caption" Class="mt-1">
+            Dati di esempio: @EmailTemplateService.SampleFirstName @EmailTemplateService.SampleLastName@(State.Kind == EmailTemplateKind.Password ? $", password {EmailTemplateService.SamplePassword}" : "").
+        </MudText>
+    </MudItem>
+</MudGrid>
+
+@code {
+    public sealed class EditorState(EmailTemplateKind kind)
+    {
+        public EmailTemplateKind Kind { get; } = kind;
+
+        public string Subject { get; set; } = "";
+
+        public string Body { get; set; } = "";
+
+        public string? Error { get; set; }
+
+        public bool Saving { get; set; }
+    }
+
+    [Parameter, EditorRequired]
+    public EditorState State { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public string IdPrefix { get; set; } = "";
+
+    private string BodyId => $"modello-{IdPrefix}-corpo";
+
+    private (string Subject, string Body) Preview => EmailTemplateService.Preview(State.Subject, State.Body);
+
+    private async Task InsertAsync(string placeholder)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("inSalute.insertAtCursor", BodyId, placeholder);
+        }
+        catch (JSException)
+        {
+            State.Body += placeholder;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        State.Error = null;
+        State.Saving = true;
+        var result = await Templates.SaveAsync(State.Kind, State.Subject, State.Body);
+        State.Saving = false;
+
+        if (result.Succeeded)
+        {
+            Snackbar.Add("Modello salvato.", Severity.Success);
+        }
+        else
+        {
+            State.Error = result.Error;
+        }
+    }
+}

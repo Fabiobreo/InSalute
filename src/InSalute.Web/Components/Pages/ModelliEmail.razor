@@ -1,7 +1,57 @@
-@using InSalute.Core.Security
-@attribute [Authorize(Policy = Policies.CanManageSettings)]
 @page "/impostazioni/modelli"
+@using InSalute.Core.Domain
+@using InSalute.Core.Security
+@using InSalute.Core.Settings
+@attribute [Authorize(Policy = Policies.CanManageSettings)]
+@inject EmailTemplateService Templates
+@inject ISnackbar Snackbar
 
 <PageTitle>Modelli email · InSalute</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-4">Modelli email</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" aria-label="Caricamento" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudTabs Elevation="1" Rounded="true" TabPanelsClass="pa-4">
+        <MudTabPanel Text="Email con il referto">
+            <ModelloEditor State="_report" IdPrefix="referto" />
+        </MudTabPanel>
+        <MudTabPanel Text="Email con la password">
+            <ModelloEditor State="_password" IdPrefix="password" />
+        </MudTabPanel>
+    </MudTabs>
+}
+
+@code {
+    private bool _loading = true;
+    private string? _loadError;
+    private ModelloEditor.EditorState _report = new(EmailTemplateKind.Report);
+    private ModelloEditor.EditorState _password = new(EmailTemplateKind.Password);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Templates.GetAllAsync();
+        if (!result.Succeeded)
+        {
+            _loadError = result.Error;
+        }
+        else
+        {
+            foreach (var template in result.Value!)
+            {
+                var state = template.Kind == EmailTemplateKind.Report ? _report : _password;
+                state.Subject = template.Subject;
+                state.Body = template.Body;
+            }
+        }
+        _loading = false;
+    }
+}
