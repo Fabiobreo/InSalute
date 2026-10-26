@@ -4,7 +4,6 @@ using InSalute.Stores;
 using InSalute.Utilities;
 using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
-using MVVMEssentials.ViewModels;
 using Prism.Commands;
 using System;
 using System.Collections.Generic;
@@ -20,7 +19,7 @@ namespace InSalute.ViewModel
     {
         #region Ui Bindings
         public string Id { get; set; }
-        
+
         public string Role { get; set; }
 
         public string Date { get; set; }
@@ -166,7 +165,7 @@ namespace InSalute.ViewModel
             {
                 return;
             }
-            
+
             Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 ["id"] = Id
@@ -186,7 +185,7 @@ namespace InSalute.ViewModel
             if (userDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 UserStore.CurrentUser = null;
-            
+
                 MessageBox.Show("Utente cancellato con successo.", "Utente cancellato", MessageBoxButton.OK, MessageBoxImage.Information);
                 NavigateLoginCommand.Execute(null);
             }

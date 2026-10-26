@@ -5,7 +5,6 @@ using InSalute.Utilities;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
-using MVVMEssentials.ViewModels;
 using NETCore.Encrypt;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -28,7 +27,7 @@ using System.Xml;
 
 namespace InSalute.ViewModel
 {
-    class CoreViewModel : ViewModelBase
+    public class CoreViewModel : ViewModelBase
     {
         #region UI buttons
         public DelegateCommand LogoutCommand { get; set; }
@@ -51,11 +50,7 @@ namespace InSalute.ViewModel
         public bool IsManageAllAccountVisible
         {
             get => _isManageAllAccountVisible;
-            set
-            {
-                _isManageAllAccountVisible = value;
-                OnPropertyChanged(nameof(IsManageAllAccountVisible));
-            }
+            set => SetProperty(ref _isManageAllAccountVisible, value);
         }
 
         private bool _isLogVisible;
@@ -90,6 +85,25 @@ namespace InSalute.ViewModel
                 _displayedUsername = value;
                 OnPropertyChanged(nameof(DisplayedUsername));
             }
+        }
+
+        private string _currentUserIcon = "../Resources/Images/user.png";
+        public string CurrentUserIcon
+        {
+            get { return _currentUserIcon; }
+            set
+            {
+                _currentUserIcon = value;
+                OnPropertyChanged(nameof(CurrentUserIcon));
+            }
+        }
+
+        private bool m_isUserProfileOpen = false;
+
+        public bool IsUserProfileOpen
+        {
+            get => m_isUserProfileOpen;
+            set => SetProperty(ref m_isUserProfileOpen, value);
         }
 
         #region Sender
@@ -496,6 +510,15 @@ namespace InSalute.ViewModel
                         _secureAttachmentPath = SecureFile(attachments);
                     }
                 }
+
+                if (string.IsNullOrEmpty(_secureAttachmentPath))
+                {
+                    // La protezione dell'allegato non è andata a buon fine
+                    // (es. PDF già protetto): interrompo l'invio senza crashare.
+                    Mouse.OverrideCursor = null;
+                    return false;
+                }
+
                 mail.Attachments.Add(new Attachment(_secureAttachmentPath));
             }
 
@@ -506,7 +529,8 @@ namespace InSalute.ViewModel
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(sender, senderPwd),
                 EnableSsl = true,
-                Port = 25
+                Port = 25,
+                Timeout = 10000
             };
 
             string domain = sender[(sender.IndexOf("@") + 1)..];
@@ -531,11 +555,11 @@ namespace InSalute.ViewModel
             catch (SmtpException e)
             {
                 success = false;
-                Console.WriteLine(e.Message);
+                MessageBox.Show(e.Message);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                MessageBox.Show(ex.Message);
             }
 
             try
@@ -551,7 +575,7 @@ namespace InSalute.ViewModel
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                MessageBox.Show(ex.Message);
             }
             finally
             {
@@ -693,25 +717,44 @@ namespace InSalute.ViewModel
 
         private string SecureFile(string filename)
         {
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-            PdfDocument document = PdfReader.Open(filename);
+            string secured_file = string.Empty;
+            try
+            {
+                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                PdfDocument document = PdfReader.Open(filename);
 
-            PdfSecuritySettings securitySettings = document.SecuritySettings;
-            EncryptPassword = Guid.NewGuid().ToString();
-            securitySettings.UserPassword = EncryptPassword;
+                PdfSecuritySettings securitySettings = document.SecuritySettings;
+                EncryptPassword = Guid.NewGuid().ToString();
+                securitySettings.UserPassword = EncryptPassword;
 
-            // Restrict some rights.
-            securitySettings.PermitAccessibilityExtractContent = false;
-            securitySettings.PermitAnnotations = false;
-            securitySettings.PermitAssembleDocument = false;
-            securitySettings.PermitExtractContent = false;
-            securitySettings.PermitFormsFill = true;
-            securitySettings.PermitModifyDocument = true;
-            securitySettings.PermitPrint = true;
-            securitySettings.PermitFullQualityPrint = true;
+                // Restrict some rights.
+                securitySettings.PermitAccessibilityExtractContent = false;
+                securitySettings.PermitAnnotations = false;
+                securitySettings.PermitAssembleDocument = false;
+                securitySettings.PermitExtractContent = false;
+                securitySettings.PermitFormsFill = true;
+                securitySettings.PermitModifyDocument = true;
+                securitySettings.PermitPrint = true;
+                securitySettings.PermitFullQualityPrint = true;
 
-            string secured_file = filename.Substring(0, filename.IndexOf(".pdf")) + "_encrypted.pdf";
-            document.Save(secured_file);
+                secured_file = filename.Substring(0, filename.IndexOf(".pdf")) + "_encrypted.pdf";
+                document.Save(secured_file);
+            }
+            catch (PdfReaderException)
+            {
+                // Il PDF allegato è già protetto da password: non può essere
+                // riaperto/ri-cifrato. Avviso l'operatore e annullo l'invio.
+                MessageBox.Show(
+                    "Il file PDF allegato è già protetto da password e non può essere cifrato di nuovo." + Environment.NewLine + Environment.NewLine +
+                    "Rimuovi la protezione dal PDF oppure allega un file non protetto, poi riprova.",
+                    "PDF già protetto", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return string.Empty;
+            }
             return secured_file;
         }
 

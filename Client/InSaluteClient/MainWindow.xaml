@@ -7,33 +7,69 @@
         xmlns:viewmodels="clr-namespace:InSalute.ViewModel"
         xmlns:modalcontrols="clr-namespace:MVVMEssentials.ViewModels;assembly=MVVMEssentials" xmlns:modalcontrol="clr-namespace:ModalControl;assembly=ModalControl"
         mc:Ignorable="d"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Title="InSalute" Height="850" Width="1200" MinHeight="850" MinWidth="1200" WindowStartupLocation="CenterScreen">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="1" CornerRadius="0" />
+    </WindowChrome.WindowChrome>
     <Grid>
-        <Grid.Resources>
-            <DataTemplate DataType="{x:Type viewmodels:HomeViewModel}">
-                <views:HomeView />
-            </DataTemplate>
-            <DataTemplate DataType="{x:Type viewmodels:CoreViewModel}">
-                <views:ExpenseView />
-            </DataTemplate>
-            <DataTemplate DataType="{x:Type viewmodels:LoginViewModel}">
-                <views:LoginView />
-            </DataTemplate>
-            <DataTemplate DataType="{x:Type viewmodels:UserViewModel}">
-                <views:UserView />
-            </DataTemplate>
-            <DataTemplate DataType="{x:Type viewmodels:ManageUserViewModel}">
-                <views:ManageUserView />
-            </DataTemplate>
-            <DataTemplate DataType="{x:Type viewmodels:LogViewModel}">
-                <views:LogView />
-            </DataTemplate>
-        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <modalcontrol:Modal Panel.ZIndex="1" IsOpen="{Binding IsOpen}">
-            <ContentControl Content="{Binding CurrentModalViewModel}" />
-        </modalcontrol:Modal>
-        
-        <ContentControl Content="{Binding CurrentViewModel}" />
+        <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource ThemeMainColor}" CornerRadius="8,8,0,0"
+                BorderBrush="{DynamicResource ThemeMainColor}" BorderThickness="0" MouseDown="Border_MouseDown">
+            <DockPanel LastChildFill="False">
+                <Label Content="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Title}" Foreground="{DynamicResource ThemeForegroundColor}" Style="{StaticResource LabelStyle}"
+                           Margin="6 0 0 0" HorizontalContentAlignment="Center" />
+                <Button DockPanel.Dock="Right" Style="{StaticResource RoundButton}" Width="20" Height="20" Margin="0 0 6 0" Command="{Binding CloseCommand}" CommandParameter="{Binding ElementName=ChlorisUiView}">
+                    <Viewbox Margin="0 0 4 4" Width="16" Height="16">
+                        <Path Fill="White" Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                    </Viewbox>
+                </Button>
+                <Button DockPanel.Dock="Right" Style="{StaticResource RoundButton}" Width="20" Height="20" Margin="0 0 6 0" Command="{Binding MaximizeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Title}">
+                    <Viewbox Margin="0 0 3 3" Width="14" Height="14">
+                        <Path Fill="White" Data="M4,4H20V20H4V4M6,8V18H18V8H6Z"/>
+                    </Viewbox>
+                </Button>
+                <Button DockPanel.Dock="Right" Style="{StaticResource RoundButton}" Width="20" Height="20" Margin="0 0 6 0" Command="{Binding MinimizeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Title}">
+                    <Viewbox Margin="0 0 3 4" Width="16" Height="16">
+                        <Path Fill="White" Data="M20,14H4V10H20"/>
+                    </Viewbox>
+                </Button>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource ThemeBackgroundColor}" CornerRadius="0 0 8 8" BorderThickness="0.75 0 0.75 0.75" BorderBrush="{DynamicResource ThemeMainColor}">
+            <Grid>
+                <Grid.Resources>
+                    <DataTemplate DataType="{x:Type viewmodels:HomeViewModel}">
+                        <views:HomeView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:CoreViewModel}">
+                        <views:CoreView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:LoginViewModel}">
+                        <views:LoginView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:UserViewModel}">
+                        <views:UserView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:ManageUserViewModel}">
+                        <views:ManageUserView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:LogViewModel}">
+                        <views:LogView />
+                    </DataTemplate>
+                </Grid.Resources>
+
+                <modalcontrol:Modal Panel.ZIndex="1" IsOpen="{Binding IsOpen}">
+                    <ContentControl Content="{Binding CurrentModalViewModel}" />
+                </modalcontrol:Modal>
+
+                <ContentControl Content="{Binding CurrentViewModel}" />
+            </Grid>
+        </Border>
     </Grid>
 </Window>

@@ -70,7 +70,7 @@
                 <Button x:Name="LoginButton" Grid.Row="2" Grid.Column="0" Content="Login" Command="{Binding LoginButtonClicked}" Style="{StaticResource ButtonStyle}" Margin="16 0 16 2" Width="180" IsDefault="{Binding IsDefaultLogin}"/>
 
 
-                <Label Grid.Row="3" Grid.Column="0" Content="Poliambulatorio InSalute © 2022" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"
+                <Label Grid.Row="3" Grid.Column="0" Content="Poliambulatorio InSalute © 2024" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"
                     FontWeight="Light" Margin="16 6" FontSize="10" Foreground="#88939D" Style="{StaticResource LabelStyle}"/>
             </Grid>
         </Border>

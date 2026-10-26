@@ -3,7 +3,6 @@ using InSalute.Stores;
 using InSalute.Utilities;
 using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
-using MVVMEssentials.ViewModels;
 using Newtonsoft.Json;
 using Prism.Commands;
 using System;

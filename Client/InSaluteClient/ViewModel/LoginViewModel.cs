@@ -1,10 +1,8 @@
-﻿using BusinessLogic;
-using InSalute.Models;
+﻿using InSalute.Models;
 using InSalute.Stores;
 using InSalute.Utilities;
 using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
-using MVVMEssentials.ViewModels;
 using NETCore.Encrypt;
 using Prism.Commands;
 using System;
@@ -122,7 +120,7 @@ namespace InSalute.ViewModel
                     ["username"] = LoginUserName,
                     ["password"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(LoginPassword))
                 };
-            
+
                 Task<HttpResponseMessage> userDetails;
                 try
                 {
@@ -133,7 +131,7 @@ namespace InSalute.ViewModel
                     MessageBox.Show("Errore durante la comunicazione con il server:\n" + ex.Message, "Errore del server", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-            
+
                 if (userDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     UserExtended user = userDetails.Result.Content.ReadAsAsync<UserExtended>().Result;

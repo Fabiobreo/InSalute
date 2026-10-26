@@ -4,7 +4,6 @@ using InSalute.Stores;
 using InSalute.Utilities;
 using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
-using MVVMEssentials.ViewModels;
 using Newtonsoft.Json;
 using Prism.Commands;
 using System;
@@ -214,7 +213,7 @@ namespace InSalute.ViewModel
                     MessageBox.Show("Ci sono stati dei problemi ed è stato possibile salvare solamente " + edited.ToString() + " di " + total.ToString() + " utenti.\nPer favore, riprovare a salvare più tardi.", "Attenzione", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
-            
+
             if (UsersList.Any(user => user.Id == 0))
             {
                 List<UserExtended> usersToAdd = UsersList.Where(user => user.Id == 0).ToList();
@@ -304,7 +303,7 @@ namespace InSalute.ViewModel
                 MessageBox.Show("Tutti gli utenti son stati salvati con successo.", "Nessun errore", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
-            
+
         }
 
         private void ReloadUsers()

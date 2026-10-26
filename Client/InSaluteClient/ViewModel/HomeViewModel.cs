@@ -1,8 +1,6 @@
 ﻿using InSalute.Stores;
 using MVVMEssentials.Commands;
 using MVVMEssentials.Services;
-using MVVMEssentials.ViewModels;
-using Prism.Commands;
 using System.Windows.Input;
 
 namespace InSalute.ViewModel
