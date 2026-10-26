@@ -1,4 +1,5 @@
 using InSalute.Core;
+using InSalute.Core.Dispatching;
 using InSalute.Core.Data;
 using InSalute.Core.Email;
 using InSalute.Core.Domain;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace InSalute.Tests;
 
@@ -17,6 +19,9 @@ namespace InSalute.Tests;
 public sealed class FakeEmailSender : IEmailSender
 {
     public List<EmailMessage> Sent { get; } = [];
+
+    /// <summary>Copia del contenuto degli allegati di ogni messaggio inviato, fatta al momento dell'invio (i file temporanei poi spariscono).</summary>
+    public List<IReadOnlyList<(string FileName, byte[] Content)>> SentAttachments { get; } = [];
 
     public SendResult? FailWith { get; set; }
 
@@ -27,6 +32,9 @@ public sealed class FakeEmailSender : IEmailSender
             return Task.FromResult(FailWith);
         }
         Sent.Add(message);
+        SentAttachments.Add((message.Attachments ?? [])
+            .Select(a => (a.FileName, File.ReadAllBytes(a.FilePath)))
+            .ToList());
         return Task.FromResult(SendResult.Ok());
     }
 }
@@ -37,6 +45,14 @@ public sealed class FakeCurrentUser : ICurrentUser
 
     public Task<CurrentUserInfo?> GetAsync(CancellationToken ct = default) =>
         Task.FromResult(UserId is null ? null : new CurrentUserInfo(UserId, null, null));
+}
+
+/// <summary>Orologio controllabile dai test.</summary>
+public sealed class TestClock : TimeProvider
+{
+    public DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;
+
+    public override DateTimeOffset GetUtcNow() => Now;
 }
 
 /// <summary>Database SQLite in-memory con Identity configurato come in produzione.</summary>
@@ -51,6 +67,13 @@ public sealed class TestEnvironment : IAsyncDisposable
 
     public FakeEmailSender EmailSender { get; } = new();
 
+    public TestClock Clock { get; } = new();
+
+    /// <summary>Cartella temporanea dei file in lavorazione, solo per questo ambiente.</summary>
+    public string TempPath { get; } = Path.Combine(Path.GetTempPath(), "insalute-tests", Guid.NewGuid().ToString("N"));
+
+    public RetentionOptions Retention { get; } = new();
+
     public TestEnvironment()
     {
         _connection.Open();
@@ -63,6 +86,10 @@ public sealed class TestEnvironment : IAsyncDisposable
         services.AddSingleton<ICurrentUser>(CurrentUser);
         services.AddInSaluteSettings();
         services.AddSingleton<IEmailSender>(EmailSender);
+        services.AddSingleton<TimeProvider>(Clock);
+        services.AddSingleton<IOptions<StorageOptions>>(Options.Create(new StorageOptions { TempPath = TempPath }));
+        services.AddSingleton<IOptions<RetentionOptions>>(Options.Create(Retention));
+        services.AddInSaluteDispatching();
         _root = services.BuildServiceProvider();
 
         using var scope = _root.CreateScope();
@@ -121,5 +148,9 @@ public sealed class TestEnvironment : IAsyncDisposable
     {
         await _root.DisposeAsync();
         await _connection.DisposeAsync();
+        if (Directory.Exists(TempPath))
+        {
+            Directory.Delete(TempPath, recursive: true);
+        }
     }
 }
