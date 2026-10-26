@@ -42,6 +42,25 @@ public static class Messaggi
     public const string ModelloRefertoConPassword = "Il modello del referto non può contenere la password.";
     public const string ModelloNonTrovato = "Modello non trovato.";
 
+    public const string CognomeObbligatorio = "Inserisci il cognome.";
+    public const string NomePazienteObbligatorio = "Inserisci il nome.";
+    public const string CognomeONomeTroppoLunghi = "Nome e cognome possono avere al massimo 100 caratteri.";
+    public const string NessunReferto = "Carica almeno un referto.";
+    public const string TroppiReferti = "Puoi caricare al massimo 10 referti.";
+    public const string TotaleTroppoGrande = "I referti superano i 50 MB in totale.";
+    public const string FatturaNonPdf = "La fattura deve essere un file PDF.";
+    public const string FileNonDisponibile = "Uno dei file caricati non è più disponibile. Carica di nuovo i documenti.";
+    public const string PdfGiaProtetto = "Questo PDF è già protetto da password. Rimuovi la protezione o carica il file originale.";
+    public const string PdfNonLeggibile = "Il file PDF non è leggibile. Controlla che non sia danneggiato.";
+    public const string InvioGiaPreparato = "Questo invio è già stato avviato.";
+    public const string InvioNonTrovato = "Invio non trovato.";
+    public const string FileTemporaneiNonDisponibili = "I file dell'invio non sono più disponibili. Annulla e rifai l'invio completo.";
+    public const string NotaArchivioZip = "Per aprire l'archivio è necessario un programma che supporti gli archivi ZIP protetti AES, ad esempio 7-Zip (gratuito).";
+
+    public static string FileTroppoGrande(string fileName) => $"Il file è troppo grande (massimo 20 MB): {fileName}.";
+
+    public static string TipoFileNonAmmesso(string fileName) => $"Tipo di file non ammesso: {fileName}.";
+
     public static string SegnapostoNonRiconosciuto(string placeholder) => $"Segnaposto non riconosciuto: {placeholder}.";
 
     public static string SegnapostoRimasto(string placeholder) => $"Segnaposto non sostituito: {placeholder}.";

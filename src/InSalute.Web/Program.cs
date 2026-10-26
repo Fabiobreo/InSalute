@@ -1,6 +1,7 @@
 using System.Globalization;
 using InSalute.Core;
 using InSalute.Core.Data;
+using InSalute.Core.Dispatching;
 using InSalute.Core.Domain;
 using InSalute.Core.Security;
 using InSalute.Core.Users;
@@ -85,6 +86,11 @@ if (OperatingSystem.IsWindows())
 }
 
 builder.Services.AddInSaluteSettings();
+
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
+builder.Services.Configure<RetentionOptions>(builder.Configuration.GetSection(RetentionOptions.SectionName));
+builder.Services.AddInSaluteDispatching();
+builder.Services.AddHostedService<TempCleanupHostedService>();
 
 var app = builder.Build();
 
