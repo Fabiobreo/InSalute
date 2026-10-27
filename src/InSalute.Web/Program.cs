@@ -18,6 +18,9 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Servizio Windows con Kestrel (non IIS): no-op quando si avvia da riga di comando.
+builder.Host.UseWindowsService();
+
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services));
