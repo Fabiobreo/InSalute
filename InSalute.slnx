@@ -3,6 +3,9 @@
     <Project Path="src/InSalute.Core/InSalute.Core.csproj" />
     <Project Path="src/InSalute.Web/InSalute.Web.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/InSalute.LegacyImport/InSalute.LegacyImport.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/InSalute.Tests/InSalute.Tests.csproj" />
   </Folder>

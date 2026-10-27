@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\InSalute.Core\InSalute.Core.csproj" />
     <ProjectReference Include="..\..\src\InSalute.Web\InSalute.Web.csproj" />
+    <ProjectReference Include="..\..\tools\InSalute.LegacyImport\InSalute.LegacyImport.csproj" />
   </ItemGroup>
 
 </Project>
