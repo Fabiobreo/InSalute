@@ -10,4 +10,8 @@ public static class DateDisplay
         var asUtc = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
         return TimeZoneInfo.ConvertTimeFromUtc(asUtc, Rome).ToString("dd/MM/yyyy HH:mm");
     }
+
+    /// <summary>Ora (HH:mm) in ora italiana, per esempio "Inviata alle 10:42".</summary>
+    public static string ToLocalTimeText(DateTimeOffset moment) =>
+        TimeZoneInfo.ConvertTime(moment, Rome).ToString("HH:mm");
 }

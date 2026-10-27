@@ -1,0 +1,170 @@
+@using InSalute.Core.Dispatching
+@using InSalute.Core.Texts
+@inject RecipientChecks Checks
+
+<form @onsubmit="SubmitAsync" @onsubmit:preventDefault="true" novalidate class="d-flex flex-column gap-2">
+    <MudText Typo="Typo.h6" HtmlTag="h2">Paziente</MudText>
+    <MudText Typo="Typo.body2">Tutti i campi sono obbligatori.</MudText>
+
+    <MudTextField @ref="_lastNameField" T="string" Value="Draft.LastName" ValueChanged="OnLastNameChanged" Immediate="true"
+                  Label="Cognome" MaxLength="100" autocomplete="off"
+                  Error="@(Touched(nameof(Draft.LastName)) && LastNameError is not null)" ErrorText="@LastNameError"
+                  OnBlur="@(() => Touch(nameof(Draft.LastName)))" />
+    <MudTextField T="string" Value="Draft.FirstName" ValueChanged="OnFirstNameChanged" Immediate="true"
+                  Label="Nome" MaxLength="100" autocomplete="off"
+                  Error="@(Touched(nameof(Draft.FirstName)) && FirstNameError is not null)" ErrorText="@FirstNameError"
+                  OnBlur="@(() => Touch(nameof(Draft.FirstName)))" />
+    <MudTextField T="string" Value="Draft.Email" ValueChanged="OnEmailChanged" Immediate="true"
+                  Label="Email" InputType="InputType.Email" autocomplete="off"
+                  Error="@(Touched(nameof(Draft.Email)) && EmailError is not null)" ErrorText="@EmailError"
+                  OnBlur="@(() => Touch(nameof(Draft.Email)))" />
+
+    @if (Suggestion is { } suggestion)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined">
+            <div class="d-flex flex-wrap align-center gap-2">
+                <span>Forse intendevi @suggestion.Email?</span>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning" OnClick="() => ApplySuggestionAsync(suggestion)">Correggi</MudButton>
+            </div>
+        </MudAlert>
+    }
+    @if (_usedForAnotherPatient)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined">
+            Attenzione: questo indirizzo è stato usato in passato per un altro paziente (cognome diverso). Verifica che sia corretto.
+        </MudAlert>
+    }
+
+    <MudTextField T="string" Value="Draft.EmailConfirm" ValueChanged="OnEmailConfirmChanged" Immediate="true"
+                  Label="Conferma email" InputType="InputType.Email" autocomplete="off"
+                  Error="@(Touched(nameof(Draft.EmailConfirm)) && EmailConfirmError is not null)" ErrorText="@EmailConfirmError"
+                  OnBlur="@(() => Touch(nameof(Draft.EmailConfirm)))" />
+
+    <div class="d-flex justify-end mt-4">
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="!IsValid">Avanti</MudButton>
+    </div>
+</form>
+
+@code {
+    private MudTextField<string>? _lastNameField;
+    private readonly HashSet<string> _touched = [];
+    private bool _usedForAnotherPatient;
+    private bool _checking;
+    private bool _checkAgain;
+
+    [Parameter, EditorRequired]
+    public DispatchDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnNext { get; set; }
+
+    private bool Touched(string field) => _touched.Contains(field);
+
+    private string? LastNameError => Draft.LastName.Trim().Length == 0 ? Messaggi.CognomeObbligatorio : null;
+
+    private string? FirstNameError => Draft.FirstName.Trim().Length == 0 ? Messaggi.NomePazienteObbligatorio : null;
+
+    private string? EmailError => RecipientChecks.IsValidEmail(Draft.Email) && Draft.Email.Trim().Length <= 254 ? null : Messaggi.EmailNonValida;
+
+    private string? EmailConfirmError =>
+        Draft.EmailConfirm.Trim().Length > 0
+        && string.Equals(Draft.Email.Trim(), Draft.EmailConfirm.Trim(), StringComparison.OrdinalIgnoreCase)
+            ? null
+            : "Le due email non coincidono.";
+
+    private bool IsValid => LastNameError is null && FirstNameError is null && EmailError is null && EmailConfirmError is null;
+
+    private DomainSuggestion? Suggestion => EmailError is null ? RecipientChecks.SuggestDomain(Draft.Email) : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Si torna a questo passo con i dati già inseriti: gli errori non vanno nascosti e gli avvisi vanno ricalcolati.
+        if (Draft.Email.Length > 0)
+        {
+            _touched.UnionWith([nameof(Draft.LastName), nameof(Draft.FirstName), nameof(Draft.Email), nameof(Draft.EmailConfirm)]);
+            await RefreshUsedForAnotherPatientAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Nel passo 1 il focus parte su "Cognome".
+        if (firstRender && _lastNameField is not null)
+        {
+            await _lastNameField.FocusAsync();
+        }
+    }
+
+    private void Touch(string field) => _touched.Add(field);
+
+    private async Task OnLastNameChanged(string value)
+    {
+        Draft.LastName = value;
+        await RefreshUsedForAnotherPatientAsync();
+    }
+
+    private void OnFirstNameChanged(string value) => Draft.FirstName = value;
+
+    private async Task OnEmailChanged(string value)
+    {
+        Draft.Email = value;
+        await RefreshUsedForAnotherPatientAsync();
+    }
+
+    private void OnEmailConfirmChanged(string value) => Draft.EmailConfirm = value;
+
+    private async Task ApplySuggestionAsync(DomainSuggestion suggestion)
+    {
+        Draft.Email = suggestion.Email;
+        // Il dominio va corretto anche nella conferma, che di solito ripete lo stesso refuso.
+        var at = Draft.EmailConfirm.LastIndexOf('@');
+        if (at > 0)
+        {
+            Draft.EmailConfirm = Draft.EmailConfirm[..at] + "@" + suggestion.Domain;
+        }
+        await RefreshUsedForAnotherPatientAsync();
+    }
+
+    /// <summary>
+    /// Un solo controllo alla volta: il contesto del database non regge due query in parallelo sullo stesso circuito.
+    /// Se nel frattempo i dati cambiano, si ripete alla fine.
+    /// </summary>
+    private async Task RefreshUsedForAnotherPatientAsync()
+    {
+        if (_checking)
+        {
+            _checkAgain = true;
+            return;
+        }
+
+        _checking = true;
+        try
+        {
+            do
+            {
+                _checkAgain = false;
+                if (EmailError is not null || LastNameError is not null)
+                {
+                    _usedForAnotherPatient = false;
+                    continue;
+                }
+
+                var result = await Checks.IsUsedForAnotherPatientAsync(Draft.Email, Draft.LastName);
+                _usedForAnotherPatient = result.Succeeded && result.Value;
+            }
+            while (_checkAgain);
+        }
+        finally
+        {
+            _checking = false;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (IsValid)
+        {
+            await OnNext.InvokeAsync();
+        }
+    }
+}

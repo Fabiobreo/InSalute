@@ -3,7 +3,7 @@
         <MudText>@Message</MudText>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annulla</MudButton>
+        <MudButton OnClick="Cancel">@CancelText</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Confirm">@ConfirmText</MudButton>
     </DialogActions>
 </MudDialog>
@@ -14,6 +14,9 @@
 
     [Parameter, EditorRequired]
     public string Message { get; set; } = "";
+
+    [Parameter]
+    public string CancelText { get; set; } = "Annulla";
 
     [Parameter]
     public string ConfirmText { get; set; } = "Conferma";

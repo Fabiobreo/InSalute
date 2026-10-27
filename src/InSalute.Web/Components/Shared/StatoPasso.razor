@@ -1,0 +1,55 @@
+<div class="stato-passo" aria-live="polite">
+    <span class="stato-icona" aria-hidden="true">
+        @switch (State)
+        {
+            case StatoPassoEsito.InCorso:
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                break;
+            case StatoPassoEsito.Riuscito:
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                break;
+            case StatoPassoEsito.Fallito:
+                <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" />
+                break;
+            case StatoPassoEsito.NonTentato:
+                <span>—</span>
+                break;
+            default:
+                <MudIcon Icon="@Icons.Material.Outlined.Schedule" Color="Color.Default" />
+                break;
+        }
+    </span>
+    <span class="visually-hidden">@StateText.</span>
+    <MudText Typo="Typo.body1" Class="flex-grow-1">@Label</MudText>
+    <MudText Typo="Typo.body2">@Detail</MudText>
+</div>
+
+@code {
+    public enum StatoPassoEsito
+    {
+        InAttesa,
+        InCorso,
+        Riuscito,
+        Fallito,
+        NonTentato,
+    }
+
+    [Parameter, EditorRequired]
+    public StatoPassoEsito State { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "";
+
+    /// <summary>Per esempio "Inviata alle 10:42".</summary>
+    [Parameter]
+    public string? Detail { get; set; }
+
+    private string StateText => State switch
+    {
+        StatoPassoEsito.InCorso => "Invio in corso",
+        StatoPassoEsito.Riuscito => "Inviata",
+        StatoPassoEsito.Fallito => "Non inviata",
+        StatoPassoEsito.NonTentato => "Non tentata",
+        _ => "In attesa",
+    };
+}

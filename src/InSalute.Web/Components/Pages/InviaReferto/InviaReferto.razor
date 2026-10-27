@@ -1,7 +1,179 @@
+@using InSalute.Web.Components.Shared
+@using InSalute.Core.Dispatching
 @using InSalute.Core.Security
+@using InSalute.Core.Settings
 @attribute [Authorize(Policy = Policies.CanSend)]
 @page "/"
+@implements IAsyncDisposable
+@inject SmtpSettingsService SmtpSettings
+@inject DispatchService Dispatcher
+@inject TempFileStore TempFiles
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject IJSRuntime JS
 
 <PageTitle>Invia referto · InSalute</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Invia referto</MudText>
+<div class="wizard">
+    <MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Invia referto</MudText>
+
+    @if (!_smtpConfigured)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Le impostazioni della posta (SMTP) non sono ancora configurate: non è possibile inviare i referti.
+            <AuthorizeView Policy="@Policies.CanManageSettings">
+                <Authorized>
+                    <MudLink Href="impostazioni/smtp">Vai alle impostazioni SMTP</MudLink>
+                </Authorized>
+                <NotAuthorized>
+                    Avvisa un amministratore.
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudAlert>
+    }
+
+    <nav aria-label="Passi della procedura">
+        <ol class="wizard-steps">
+            @for (var i = 0; i < StepNames.Length; i++)
+            {
+                var number = i + 1;
+                <li aria-current="@(number == _step ? "step" : null)">
+                    <span class="wizard-step-number">@number</span>
+                    <span>@StepNames[i]</span>
+                </li>
+            }
+        </ol>
+    </nav>
+
+    <MudPaper Class="pa-4">
+        @switch (_step)
+        {
+            case 1:
+                <StepPaziente Draft="_draft" OnNext="() => GoTo(2)" />
+                break;
+            case 2:
+                <StepDocumenti Draft="_draft" OnBack="() => GoTo(1)" OnNext="() => GoTo(3)" />
+                break;
+            case 3:
+                <StepRiepilogo Draft="_draft" SendEnabled="_smtpConfigured" OnBack="() => GoTo(2)" OnSend="() => GoTo(4)" />
+                break;
+            default:
+                <StepEsito Draft="_draft" OnProgress="UpdateGuardAsync" OnNewDispatch="StartOver" OnCancelled="StartOver"
+                           OnBackToSummary="() => GoTo(3)" />
+                break;
+        }
+    </MudPaper>
+</div>
+
+@code {
+    private static readonly string[] StepNames = ["Paziente", "Documenti", "Riepilogo", "Esito"];
+
+    private DispatchDraft _draft = new();
+    private int _step = 1;
+    private bool _smtpConfigured = true;
+    private bool _guardActive;
+    private IDisposable? _locationHandler;
+    private bool _disposed;
+
+    /// <summary>Finché l'invio è a metà (preparato ma non concluso) lasciare la pagina lo annullerebbe: si avvisa.</summary>
+    private bool GuardNeeded => _step == 4 && !_draft.Finished && _draft.Prepared is not null;
+
+    protected override async Task OnInitializedAsync() =>
+        _smtpConfigured = await SmtpSettings.IsConfiguredAsync();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _locationHandler = Navigation.RegisterLocationChangingHandler(OnLocationChangingAsync);
+        }
+    }
+
+    private async Task GoTo(int step)
+    {
+        _step = step;
+        await UpdateGuardAsync();
+    }
+
+    private async Task UpdateGuardAsync()
+    {
+        var needed = GuardNeeded;
+        if (needed == _guardActive || _disposed)
+        {
+            return;
+        }
+
+        _guardActive = needed;
+        try
+        {
+            await JS.InvokeVoidAsync("inSalute.setUnloadGuard", needed);
+        }
+        catch (JSException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+            // Prerendering o circuito già chiuso: nessun browser da avvisare.
+        }
+    }
+
+    private async ValueTask OnLocationChangingAsync(LocationChangingContext context)
+    {
+        if (!GuardNeeded)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<ConfermaDialog>
+        {
+            { x => x.Message, "L'invio non è terminato. Se esci ora verrà annullato e il paziente potrebbe avere un file che non può aprire." },
+            { x => x.ConfirmText, "Esci e annulla l'invio" },
+            { x => x.CancelText, "Resta qui" },
+        };
+        var dialog = await DialogService.ShowAsync<ConfermaDialog>("Uscire dalla pagina?", parameters);
+        if (await dialog.Result is not { Canceled: false })
+        {
+            context.PreventNavigation();
+        }
+    }
+
+    /// <summary>"Nuovo invio" e annullamento: pulizia dei file e procedura da capo, con un nuovo DraftId.</summary>
+    private async Task StartOver()
+    {
+        TempFiles.DeleteDraft(_draft.DraftId);
+        _draft = new DispatchDraft();
+        _step = 1;
+        await UpdateGuardAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        _locationHandler?.Dispose();
+
+        try
+        {
+            if (_draft.Prepared is not null && !_draft.Finished)
+            {
+                // Uscita (o chiusura del circuito) con l'invio a metà: step non inviati Abandoned e file cancellati.
+                // Se il circuito è già caduto ci pensa la pulizia periodica dopo 60 minuti.
+                await Dispatcher.AbandonAsync(_draft.Prepared, CancellationToken.None);
+            }
+        }
+        catch (Exception)
+        {
+            // Servizi già rilasciati con il circuito: nessun dettaglio da mostrare.
+        }
+
+        TempFiles.DeleteDraft(_draft.DraftId);
+
+        try
+        {
+            await JS.InvokeVoidAsync("inSalute.setUnloadGuard", false);
+        }
+        catch (Exception)
+        {
+            // Circuito chiuso: il browser non c'è più.
+        }
+    }
+}

@@ -1,4 +1,9 @@
 window.inSalute = {
+    // Avvisa il browser se si chiude o si ricarica la scheda mentre un invio è a metà.
+    setUnloadGuard: enabled => {
+        window.onbeforeunload = enabled ? e => { e.preventDefault(); e.returnValue = ''; } : null;
+    },
+
     submitForm: id => document.getElementById(id)?.submit(),
 
     // Inserisce il testo alla posizione del cursore e notifica Blazor con un evento "input".

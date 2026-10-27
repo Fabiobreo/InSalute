@@ -1,0 +1,12 @@
+@if (!string.IsNullOrWhiteSpace(Text))
+{
+    <details class="tech-details">
+        <summary>Dettagli tecnici</summary>
+        <pre>@Text</pre>
+    </details>
+}
+
+@code {
+    [Parameter]
+    public string? Text { get; set; }
+}

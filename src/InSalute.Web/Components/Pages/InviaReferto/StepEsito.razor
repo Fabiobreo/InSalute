@@ -1,0 +1,291 @@
+@using InSalute.Web.Components.Shared
+@using InSalute.Core.Dispatching
+@using InSalute.Core.Texts
+@using InSalute.Web.Services
+@using static InSalute.Web.Components.Shared.StatoPasso
+@implements IDisposable
+@inject DispatchService Dispatcher
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject TimeProvider Time
+@inject ILogger<StepEsito> Logger
+
+<div class="d-flex flex-column gap-4">
+    <MudText Typo="Typo.h6" HtmlTag="h2">Esito dell'invio</MudText>
+
+    @if (_prepareError is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_prepareError</MudAlert>
+        <div class="d-flex justify-start">
+            <MudButton Variant="Variant.Outlined" OnClick="OnBackToSummary" @ref="_primaryAction">Indietro</MudButton>
+        </div>
+    }
+    else
+    {
+        <div>
+            <StatoPasso State="_report" Label="Email con il referto" Detail="@ReportDetail" />
+            <StatoPasso State="_password" Label="Email con la password" Detail="@PasswordDetail" />
+        </div>
+
+        @if (_report == StatoPassoEsito.Fallito)
+        {
+            <MudAlert Severity="Severity.Error">@_reportMessage</MudAlert>
+            <DettagliTecnici Text="_reportTechnical" />
+        }
+        @if (_password == StatoPassoEsito.Fallito)
+        {
+            <MudAlert Severity="Severity.Error">@_passwordMessage</MudAlert>
+            <DettagliTecnici Text="_passwordTechnical" />
+        }
+
+        @if (Draft.Finished && _report == StatoPassoEsito.Riuscito && _password == StatoPassoEsito.Riuscito)
+        {
+            <MudAlert Severity="Severity.Success">Referto e password inviati a @Draft.Email.Trim().</MudAlert>
+            <div class="d-flex justify-end">
+                <MudButton @ref="_primaryAction" Variant="Variant.Filled" Color="Color.Primary" OnClick="OnNewDispatch">Nuovo invio</MudButton>
+            </div>
+        }
+        else if (!_busy && _report == StatoPassoEsito.Fallito)
+        {
+            <div class="d-flex flex-wrap justify-end gap-2">
+                <MudButton Variant="Variant.Outlined" OnClick="() => CancelAsync(reportAlreadySent: false)">Annulla invio</MudButton>
+                @if (!_stale)
+                {
+                    <MudButton @ref="_primaryAction" Variant="Variant.Filled" Color="Color.Primary" OnClick="ContinueAsync">Riprova invio referto</MudButton>
+                }
+            </div>
+        }
+        else if (!_busy && _password == StatoPassoEsito.Fallito)
+        {
+            <div class="d-flex flex-wrap justify-end gap-2">
+                <MudButton Variant="Variant.Outlined" OnClick="() => CancelAsync(reportAlreadySent: true)">Annulla</MudButton>
+                @if (!_stale)
+                {
+                    <MudButton @ref="_primaryAction" Variant="Variant.Filled" Color="Color.Primary" OnClick="ContinueAsync">Riprova invio password</MudButton>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private readonly CancellationTokenSource _cts = new();
+    private MudButton? _primaryAction;
+    private StatoPassoEsito _report = StatoPassoEsito.InCorso;
+    private StatoPassoEsito _password = StatoPassoEsito.InAttesa;
+    private string? _reportMessage;
+    private string? _reportTechnical;
+    private string? _passwordMessage;
+    private string? _passwordTechnical;
+    private string? _prepareError;
+    private DateTimeOffset? _reportSentAt;
+    private DateTimeOffset? _passwordSentAt;
+    private bool _busy;
+    private bool _stale;
+    private bool _focusPrimary;
+
+    [Parameter, EditorRequired]
+    public DispatchDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnNewDispatch { get; set; }
+
+    /// <summary>L'invio è stato annullato: la procedura riparte da capo.</summary>
+    [Parameter]
+    public EventCallback OnCancelled { get; set; }
+
+    /// <summary>La preparazione è fallita prima di inviare qualsiasi cosa: si può tornare al riepilogo.</summary>
+    [Parameter]
+    public EventCallback OnBackToSummary { get; set; }
+
+    /// <summary>Lo stato dell'invio è cambiato (serve al genitore per l'avviso all'uscita dalla pagina).</summary>
+    [Parameter]
+    public EventCallback OnProgress { get; set; }
+
+    private string? ReportDetail => _reportSentAt is { } at ? $"Inviata alle {DateDisplay.ToLocalTimeText(at)}" : null;
+
+    private string? PasswordDetail => _passwordSentAt is { } at ? $"Inviata alle {DateDisplay.ToLocalTimeText(at)}" : null;
+
+    protected override Task OnInitializedAsync() => ContinueAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Da tastiera: a fine invio il focus passa al pulsante utile (Nuovo invio, Riprova).
+        if (_focusPrimary && _primaryAction is not null)
+        {
+            _focusPrimary = false;
+            await _primaryAction.FocusAsync();
+        }
+    }
+
+    /// <summary>
+    /// Fa il passo successivo che manca: prepara, poi invia il referto e solo se risulta inviato la password.
+    /// Vale sia per il primo invio sia per entrambi i "Riprova": lo stato salvato decide cosa serve.
+    /// </summary>
+    private async Task ContinueAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            if (Draft.Prepared is null && !await PrepareAsync())
+            {
+                return;
+            }
+
+            if (_report != StatoPassoEsito.Riuscito)
+            {
+                _report = StatoPassoEsito.InCorso;
+                _password = StatoPassoEsito.InAttesa;
+                await ChangedAsync();
+
+                var report = await Dispatcher.SendReportAsync(Draft.Prepared!, _cts.Token);
+                if (!report.Succeeded)
+                {
+                    _report = StatoPassoEsito.Fallito;
+                    _password = StatoPassoEsito.NonTentato;
+                    _reportMessage = report.UserMessage ?? Messaggi.ErroreGenerico;
+                    _reportTechnical = report.TechnicalDetails;
+                    return;
+                }
+                _report = StatoPassoEsito.Riuscito;
+                _reportSentAt = Time.GetUtcNow();
+            }
+
+            _password = StatoPassoEsito.InCorso;
+            await ChangedAsync();
+
+            DispatchStepResult password;
+            try
+            {
+                password = await Dispatcher.SendPasswordAsync(Draft.Prepared!, _cts.Token);
+            }
+            catch (InvalidOperationException)
+            {
+                // Lo stato salvato non permette più di inviare la password (scaduto o annullato): riprovare non serve.
+                _stale = true;
+                _password = StatoPassoEsito.Fallito;
+                _passwordMessage = Messaggi.InvioNonPiuValido;
+                return;
+            }
+
+            if (password.Succeeded)
+            {
+                _password = StatoPassoEsito.Riuscito;
+                _passwordSentAt = Time.GetUtcNow();
+                Draft.Finished = true;
+            }
+            else
+            {
+                _password = StatoPassoEsito.Fallito;
+                _passwordMessage = password.UserMessage ?? Messaggi.ErroreGenerico;
+                _passwordTechnical = password.TechnicalDetails;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Pagina chiusa: ci pensa InviaReferto.
+        }
+        catch (Exception ex)
+        {
+            // Nessuna eccezione arriva all'interfaccia; nel log solo l'Id dell'invio.
+            Logger.LogError(ex, "Errore imprevisto durante l'invio {DispatchId}", Draft.DraftId);
+            if (_report != StatoPassoEsito.Riuscito)
+            {
+                _report = StatoPassoEsito.Fallito;
+                _password = StatoPassoEsito.NonTentato;
+                _reportMessage = Messaggi.ErroreGenerico;
+            }
+            else
+            {
+                _password = StatoPassoEsito.Fallito;
+                _passwordMessage = Messaggi.ErroreGenerico;
+            }
+        }
+        finally
+        {
+            _busy = false;
+            _focusPrimary = true;
+            await ChangedAsync();
+        }
+    }
+
+    private async Task<bool> PrepareAsync()
+    {
+        var request = new DispatchRequest(
+            Draft.DraftId,
+            Draft.FirstName,
+            Draft.LastName,
+            Draft.Email,
+            Draft.AcceptedReports.Select(r => r.Stored!).ToList(),
+            Draft.Invoice is { IsAccepted: true } invoice ? invoice.Stored : null);
+
+        var result = await Dispatcher.PrepareAsync(request, _cts.Token);
+        if (!result.Succeeded)
+        {
+            _prepareError = result.Error ?? Messaggi.ErroreGenerico;
+            return false;
+        }
+
+        Draft.Prepared = result.Value;
+        return true;
+    }
+
+    private async Task CancelAsync(bool reportAlreadySent)
+    {
+        if (_busy || Draft.Prepared is null)
+        {
+            return;
+        }
+
+        if (reportAlreadySent)
+        {
+            var parameters = new DialogParameters<ConfermaDialog>
+            {
+                { x => x.Message, "Il paziente ha ricevuto il referto ma non la password. Se annulli dovrai rifare l'invio completo." },
+                { x => x.ConfirmText, "Annulla invio" },
+                { x => x.CancelText, "Non annullare" },
+            };
+            var dialog = await DialogService.ShowAsync<ConfermaDialog>("Annullare l'invio?", parameters);
+            if (await dialog.Result is not { Canceled: false })
+            {
+                return;
+            }
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Dispatcher.AbandonAsync(Draft.Prepared, CancellationToken.None);
+            if (!result.Succeeded)
+            {
+                Snackbar.Add(result.Error ?? Messaggi.ErroreGenerico, Severity.Error, o => o.RequireInteraction = true);
+                return;
+            }
+
+            Draft.Finished = true;
+            Snackbar.Add("Invio annullato.", Severity.Normal);
+        }
+        finally
+        {
+            _busy = false;
+        }
+        await OnCancelled.InvokeAsync();
+    }
+
+    private async Task ChangedAsync()
+    {
+        await InvokeAsync(StateHasChanged);
+        await OnProgress.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+}

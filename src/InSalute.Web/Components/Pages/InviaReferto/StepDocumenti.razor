@@ -1,0 +1,277 @@
+@using InSalute.Core.Dispatching
+@using InSalute.Core.Texts
+@using InSalute.Web.Services
+@implements IDisposable
+@inject TempFileStore TempFiles
+@inject AttachmentProtector Protector
+
+<div class="d-flex flex-column gap-4">
+    <MudText Typo="Typo.h6" HtmlTag="h2">Documenti</MudText>
+
+    <section aria-labelledby="titolo-referti">
+        <MudText Typo="Typo.subtitle1" id="titolo-referti" Class="mb-2">Referti</MudText>
+        <div class="drop-zone">
+            <MudIcon Icon="@Icons.Material.Filled.UploadFile" Size="Size.Large" aria-hidden="true" />
+            <MudText Typo="Typo.body1">Trascina qui i referti oppure scegli i file dal computer</MudText>
+            <MudText Typo="Typo.body2">
+                PDF, immagini (JPG, PNG), Word, ODT e TXT. Fino a @UploadLimits.MaxReports file, 20 MB ciascuno, 50 MB in totale.
+            </MudText>
+            <InputFile OnChange="OnReportsChosenAsync" multiple accept="@Accept" aria-label="Scegli i referti da caricare" />
+        </div>
+
+        @if (_uploading)
+        {
+            <div class="d-flex align-center gap-2 mt-2" role="status">
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <MudText Typo="Typo.body2">Caricamento in corso…</MudText>
+            </div>
+        }
+
+        <ul class="mud-list-padding pa-0 mt-3" style="list-style:none;">
+            @foreach (var file in Draft.Reports)
+            {
+                <li class="mb-2">
+                    <MudPaper Outlined="true" Class="pa-3 d-flex align-center gap-3">
+                        <MudIcon Icon="@IconFor(file.Name)" Color="@(file.IsAccepted ? Color.Primary : Color.Error)" aria-hidden="true" />
+                        <div class="flex-grow-1">
+                            <MudText Typo="Typo.body1">@file.Name</MudText>
+                            @if (file.IsAccepted)
+                            {
+                                <MudText Typo="Typo.body2">@Details(file)</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Error">@file.Error</MudText>
+                            }
+                        </div>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" title="@($"Rimuovi {file.Name}")"
+                                       aria-label="@($"Rimuovi {file.Name}")" OnClick="() => RemoveReport(file)" />
+                    </MudPaper>
+                </li>
+            }
+        </ul>
+
+        @if (ShowLastNameWarning)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined">
+                Nessun file contiene il cognome «@Draft.LastName.Trim()» nel nome. Verifica di aver allegato i documenti giusti.
+            </MudAlert>
+        }
+    </section>
+
+    <section aria-labelledby="titolo-fattura">
+        <MudText Typo="Typo.subtitle1" id="titolo-fattura" Class="mb-2">Fattura (facoltativa)</MudText>
+        @if (Draft.Invoice is null || !Draft.Invoice.IsAccepted)
+        {
+            <div class="drop-zone">
+                <MudText Typo="Typo.body1">Trascina qui la fattura (un solo file PDF) oppure sceglila dal computer</MudText>
+                <InputFile OnChange="OnInvoiceChosenAsync" accept=".pdf" aria-label="Scegli la fattura da caricare" />
+            </div>
+        }
+        @if (Draft.Invoice is { } invoice)
+        {
+            <MudPaper Outlined="true" Class="pa-3 d-flex align-center gap-3 mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.PictureAsPdf" Color="@(invoice.IsAccepted ? Color.Primary : Color.Error)" aria-hidden="true" />
+                <div class="flex-grow-1">
+                    <MudText Typo="Typo.body1">@invoice.Name</MudText>
+                    @if (invoice.IsAccepted)
+                    {
+                        <MudText Typo="Typo.body2">@FileSizeFormat.ToText(invoice.SizeBytes)</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Error">@invoice.Error</MudText>
+                    }
+                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" title="@($"Rimuovi {invoice.Name}")"
+                               aria-label="@($"Rimuovi {invoice.Name}")" OnClick="RemoveInvoice" />
+            </MudPaper>
+        }
+        <MudText Typo="Typo.body2" Class="mt-2">La fattura sarà allegata senza password.</MudText>
+    </section>
+
+    <div class="d-flex justify-space-between mt-2">
+        <MudButton Variant="Variant.Outlined" OnClick="OnBack">Indietro</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!CanContinue)" OnClick="OnNext">Avanti</MudButton>
+    </div>
+</div>
+
+@code {
+    private readonly CancellationTokenSource _cts = new();
+    private bool _uploading;
+
+    [Parameter, EditorRequired]
+    public DispatchDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnBack { get; set; }
+
+    [Parameter]
+    public EventCallback OnNext { get; set; }
+
+    private static readonly string Accept = string.Join(",", UploadLimits.AllowedExtensions);
+
+    private bool CanContinue => !_uploading && Draft.AcceptedReports.Any();
+
+    private bool ShowLastNameWarning =>
+        Draft.AcceptedReports.Any()
+        && RecipientChecks.NoFileNameContainsLastName(Draft.LastName, Draft.AcceptedReports.Select(r => r.Name));
+
+    private static string IconFor(string fileName) => Path.GetExtension(fileName).ToLowerInvariant() switch
+    {
+        ".pdf" => Icons.Material.Filled.PictureAsPdf,
+        ".jpg" or ".jpeg" or ".png" => Icons.Material.Filled.Image,
+        _ => Icons.Material.Filled.Description,
+    };
+
+    private static string Details(DraftFile file)
+    {
+        var size = FileSizeFormat.ToText(file.SizeBytes);
+        return file.Pages is { } pages ? $"{size} · {pages} {(pages == 1 ? "pagina" : "pagine")}" : size;
+    }
+
+    private async Task OnReportsChosenAsync(InputFileChangeEventArgs e)
+    {
+        _uploading = true;
+        try
+        {
+            // Caricarne altri aggiunge all'elenco, non lo sostituisce.
+            foreach (var browserFile in e.GetMultipleFiles(maximumFileCount: 100))
+            {
+                Draft.Reports.Add(await ReceiveReportAsync(browserFile));
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Pagina chiusa durante il caricamento: la cartella temporanea viene cancellata da chi ha creato la procedura.
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private async Task<DraftFile> ReceiveReportAsync(IBrowserFile browserFile)
+    {
+        var name = Path.GetFileName(browserFile.Name);
+        DraftFile Rejected(string reason) => new() { Name = name, SizeBytes = browserFile.Size, Error = reason };
+
+        if (!UploadLimits.IsAllowed(name))
+        {
+            return Rejected(Messaggi.TipoFileNonAmmesso(name));
+        }
+        if (browserFile.Size > UploadLimits.MaxFileBytes)
+        {
+            return Rejected(Messaggi.FileTroppoGrande(name));
+        }
+        if (Draft.AcceptedReports.Count() >= UploadLimits.MaxReports)
+        {
+            return Rejected(Messaggi.TroppiReferti);
+        }
+        if (Draft.AcceptedReports.Sum(r => r.SizeBytes) + browserFile.Size > UploadLimits.MaxTotalBytes)
+        {
+            return Rejected(Messaggi.TotaleTroppoGrande);
+        }
+
+        StoredFile stored;
+        try
+        {
+            await using var stream = browserFile.OpenReadStream(UploadLimits.MaxFileBytes, _cts.Token);
+            stored = await TempFiles.SaveAsync(Draft.DraftId, name, stream, _cts.Token);
+        }
+        catch (IOException)
+        {
+            return Rejected(Messaggi.ErroreGenerico);
+        }
+
+        int? pages = null;
+        if (AttachmentProtector.IsPdf(name))
+        {
+            try
+            {
+                var path = TempFiles.ResolveFile(Draft.DraftId, stored.StoredName)!;
+                pages = await Protector.InspectPdfAsync(path, name, _cts.Token);
+            }
+            catch (ProtectedPdfException)
+            {
+                // Un PDF già protetto non si può unire né ricifrare: non viene accettato.
+                TempFiles.DeleteFile(Draft.DraftId, stored.StoredName);
+                return Rejected(Messaggi.PdfGiaProtetto);
+            }
+            catch (InvalidPdfException)
+            {
+                TempFiles.DeleteFile(Draft.DraftId, stored.StoredName);
+                return Rejected(Messaggi.PdfNonLeggibile);
+            }
+        }
+
+        return new DraftFile { Name = name, SizeBytes = stored.SizeBytes, Stored = stored, Pages = pages };
+    }
+
+    private async Task OnInvoiceChosenAsync(InputFileChangeEventArgs e)
+    {
+        var browserFile = e.File;
+        var name = Path.GetFileName(browserFile.Name);
+        DraftFile Rejected(string reason) => new() { Name = name, SizeBytes = browserFile.Size, Error = reason };
+
+        if (Draft.Invoice is { Stored: { } previous })
+        {
+            TempFiles.DeleteFile(Draft.DraftId, previous.StoredName);
+        }
+
+        if (!AttachmentProtector.IsPdf(name))
+        {
+            Draft.Invoice = Rejected(Messaggi.FatturaNonPdf);
+            return;
+        }
+        if (browserFile.Size > UploadLimits.MaxFileBytes)
+        {
+            Draft.Invoice = Rejected(Messaggi.FileTroppoGrande(name));
+            return;
+        }
+
+        _uploading = true;
+        try
+        {
+            await using var stream = browserFile.OpenReadStream(UploadLimits.MaxFileBytes, _cts.Token);
+            var stored = await TempFiles.SaveAsync(Draft.DraftId, name, stream, _cts.Token);
+            Draft.Invoice = new DraftFile { Name = name, SizeBytes = stored.SizeBytes, Stored = stored };
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (IOException)
+        {
+            Draft.Invoice = Rejected(Messaggi.ErroreGenerico);
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private void RemoveReport(DraftFile file)
+    {
+        if (file.Stored is not null)
+        {
+            TempFiles.DeleteFile(Draft.DraftId, file.Stored.StoredName);
+        }
+        Draft.Reports.Remove(file);
+    }
+
+    private void RemoveInvoice()
+    {
+        if (Draft.Invoice?.Stored is not null)
+        {
+            TempFiles.DeleteFile(Draft.DraftId, Draft.Invoice.Stored.StoredName);
+        }
+        Draft.Invoice = null;
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+}
