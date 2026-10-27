@@ -43,3 +43,12 @@ public sealed record DispatchStepResult(bool Attempted, bool Succeeded, string? 
 {
     public static DispatchStepResult NotAttempted(string? message = null) => new(false, false, message);
 }
+
+/// <summary>Anteprima del riepilogo: nelle email la password è sostituita da <see cref="DispatchService.PasswordMask"/>.</summary>
+public sealed record DispatchPreview(
+    ProtectionKind ProtectionKind,
+    string ProtectedFileName,
+    string ReportSubject,
+    string ReportBody,
+    string PasswordSubject,
+    string PasswordBody);

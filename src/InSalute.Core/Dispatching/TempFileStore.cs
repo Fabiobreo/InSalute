@@ -75,6 +75,17 @@ public sealed partial class TempFileStore(IOptions<StorageOptions> options, ILog
         return File.Exists(path) ? path : null;
     }
 
+    /// <summary>Cancella un solo file dell'invio (es. quando l'operatore lo toglie dall'elenco). Il nome è convalidato come in <see cref="ResolveFile"/>.</summary>
+    public void DeleteFile(Guid draftId, string storedName)
+    {
+        var path = ResolveFile(draftId, storedName);
+        if (path is null)
+        {
+            return;
+        }
+        TryDeleteFile(path);
+    }
+
     public void DeleteDraft(Guid draftId)
     {
         var folder = GetDraftFolder(draftId);

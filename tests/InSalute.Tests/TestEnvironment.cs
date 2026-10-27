@@ -25,11 +25,18 @@ public sealed class FakeEmailSender : IEmailSender
 
     public SendResult? FailWith { get; set; }
 
+    /// <summary>Se impostato, dopo questo numero di messaggi inviati con successo i successivi falliscono (connessione caduta).</summary>
+    public int? FailAfter { get; set; }
+
     public Task<SendResult> SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         if (FailWith is not null)
         {
             return Task.FromResult(FailWith);
+        }
+        if (FailAfter is { } limit && Sent.Count >= limit)
+        {
+            return Task.FromResult(SendResult.Fail(SendErrorCode.ConnectionFailed, "simulato"));
         }
         Sent.Add(message);
         SentAttachments.Add((message.Attachments ?? [])

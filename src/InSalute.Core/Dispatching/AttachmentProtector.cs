@@ -36,6 +36,23 @@ public sealed class AttachmentProtector
     public static bool IsPdf(string fileName) =>
         string.Equals(Path.GetExtension(fileName), ".pdf", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>La protezione che verrà usata: un unico PDF se sono tutti PDF, altrimenti uno ZIP.</summary>
+    public static ProtectionKind KindFor(IEnumerable<string> originalFileNames) =>
+        originalFileNames.All(IsPdf) ? ProtectionKind.PdfAes : ProtectionKind.ZipAes;
+
+    /// <summary>
+    /// Controlla un PDF caricato e ne restituisce il numero di pagine. Lancia <see cref="ProtectedPdfException"/> se è già
+    /// protetto da password e <see cref="InvalidPdfException"/> se non è leggibile: in entrambi i casi non va accettato.
+    /// </summary>
+    public Task<int> InspectPdfAsync(string filePath, string originalFileName, CancellationToken ct = default) =>
+        Task.Run(
+            () =>
+            {
+                using var document = OpenForImport(new ProtectionInput(filePath, originalFileName));
+                return document.PageCount;
+            },
+            ct);
+
     public Task<ProtectedPackage> ProtectAsync(
         IReadOnlyList<ProtectionInput> reports,
         string outputFolder,

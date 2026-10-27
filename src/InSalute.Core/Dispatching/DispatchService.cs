@@ -223,6 +223,52 @@ public sealed class DispatchService(
         return null;
     }
 
+    // ---- PreviewAsync ---------------------------------------------------------------------------------------
+
+    /// <summary>Segnaposto mostrato al posto della password nell'anteprima: la password si genera solo all'invio.</summary>
+    public const string PasswordMask = "••••••••••••";
+
+    /// <summary>
+    /// Anteprima delle due email e del nome del file protetto per il riepilogo (6.1, passo 3). Serve il permesso di invio,
+    /// non quello di gestire i modelli: l'operatore vede il testo ma non lo modifica.
+    /// </summary>
+    public async Task<OperationResult<DispatchPreview>> PreviewAsync(
+        string firstName, string lastName, IReadOnlyList<string> reportFileNames, CancellationToken ct = default)
+    {
+        if (await actors.GetAllowedAsync(Policies.CanSend, ct) is null)
+        {
+            return OperationResult<DispatchPreview>.Fail(Messaggi.NonAutorizzato);
+        }
+        if (reportFileNames.Count == 0)
+        {
+            return OperationResult<DispatchPreview>.Fail(Messaggi.NessunReferto);
+        }
+
+        var kind = AttachmentProtector.KindFor(reportFileNames);
+        var values = new Dictionary<string, string>
+        {
+            [TemplateRenderer.FirstName] = firstName,
+            [TemplateRenderer.LastName] = lastName,
+            [TemplateRenderer.Password] = PasswordMask,
+        };
+        var report = Render(await LoadTemplateAsync(EmailTemplateKind.Report, ct), values);
+        var password = Render(await LoadTemplateAsync(EmailTemplateKind.Password, ct), values);
+        if (report is null || password is null)
+        {
+            return OperationResult<DispatchPreview>.Fail(Messaggi.ErroreGenerico);
+        }
+
+        var reportBody = kind == ProtectionKind.ZipAes ? report.Value.Body + "\n\n" + Messaggi.NotaArchivioZip : report.Value.Body;
+        var extension = kind == ProtectionKind.PdfAes ? ".pdf" : ".zip";
+        return OperationResult<DispatchPreview>.Ok(new DispatchPreview(
+            kind,
+            DispatchFileName.Build(lastName.Trim(), firstName.Trim(), time.GetUtcNow(), extension),
+            report.Value.Subject,
+            reportBody,
+            password.Value.Subject,
+            password.Value.Body));
+    }
+
     // ---- SendReportAsync ------------------------------------------------------------------------------------
 
     /// <summary>Invia la prima email. Se il referto risulta già inviato (o l'invio è abbandonato) non fa nulla.</summary>
@@ -364,11 +410,6 @@ public sealed class DispatchService(
 
     private static (string Subject, string Body)? Render(EmailTemplate? template, Dispatch dispatch, string? password)
     {
-        if (template is null)
-        {
-            return null;
-        }
-
         var values = new Dictionary<string, string>
         {
             [TemplateRenderer.FirstName] = dispatch.PatientFirstName,
@@ -377,6 +418,15 @@ public sealed class DispatchService(
         if (password is not null)
         {
             values[TemplateRenderer.Password] = password;
+        }
+        return Render(template, values);
+    }
+
+    private static (string Subject, string Body)? Render(EmailTemplate? template, IReadOnlyDictionary<string, string> values)
+    {
+        if (template is null)
+        {
+            return null;
         }
 
         var subject = TemplateRenderer.Render(template.Subject, values);

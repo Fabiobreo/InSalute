@@ -55,6 +55,7 @@ public static class Messaggi
     public const string InvioGiaPreparato = "Questo invio è già stato avviato.";
     public const string InvioNonTrovato = "Invio non trovato.";
     public const string FileTemporaneiNonDisponibili = "I file dell'invio non sono più disponibili. Annulla e rifai l'invio completo.";
+    public const string InvioNonPiuValido = "Questo invio non è più valido (è scaduto o è stato annullato). Annulla e rifai l'invio completo.";
     public const string NotaArchivioZip = "Per aprire l'archivio è necessario un programma che supporti gli archivi ZIP protetti AES, ad esempio 7-Zip (gratuito).";
 
     public static string FileTroppoGrande(string fileName) => $"Il file è troppo grande (massimo 20 MB): {fileName}.";
