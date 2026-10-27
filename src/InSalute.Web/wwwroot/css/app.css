@@ -278,3 +278,19 @@ h1:focus {
     word-break: break-word;
     margin: 8px 0 0;
 }
+
+/* Pagina di dettaglio invio */
+.detail-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 24px;
+    margin: 0;
+}
+
+.detail-list dt {
+    color: #5F6B76;
+}
+
+.detail-list dd {
+    margin: 0;
+}

@@ -28,6 +28,7 @@ public static class CoreServiceCollectionExtensions
         services.AddSingleton<AttachmentProtector>();
         services.AddScoped<DispatchService>();
         services.AddScoped<RecipientChecks>();
+        services.AddScoped<DispatchHistoryService>();
         services.AddScoped<DispatchCleanupService>();
         return services;
     }

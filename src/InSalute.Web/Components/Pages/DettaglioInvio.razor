@@ -1,12 +1,129 @@
+@using InSalute.Web.Components.Shared
+@using InSalute.Core.Dispatching
+@using InSalute.Core.Domain
 @using InSalute.Core.Security
+@using InSalute.Web.Services
 @attribute [Authorize(Policy = Policies.CanSend)]
 @page "/storico/{id:guid}"
+@inject DispatchHistoryService History
 
 <PageTitle>Dettaglio invio · InSalute</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Dettaglio invio</MudText>
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-2">Dettaglio invio</MudText>
+<MudLink Href="storico" Class="mb-4 d-inline-block">← Torna allo storico</MudLink>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" aria-label="Caricamento" />
+}
+else if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error">@_error</MudAlert>
+}
+else if (_detail is { } d)
+{
+    <div class="d-flex flex-column gap-4" style="max-width: 900px;">
+        <MudPaper Class="pa-4">
+            <div class="mb-2"><StatoInvioChip Status="d.Status" /></div>
+            @if (d.Status == DispatchOverallStatus.PasswordNotSent)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+                    Rifare l'invio completo: il paziente ha un file che non può aprire.
+                </MudAlert>
+            }
+            <dl class="detail-list">
+                <dt>Data e ora</dt><dd>@DateDisplay.ToLocalText(d.CreatedAt)</dd>
+                <dt>Paziente</dt><dd>@(PatientName(d))</dd>
+                <dt>Email</dt><dd>@d.RecipientEmail</dd>
+                <dt>Operatore</dt><dd>@d.OperatorName</dd>
+                <dt>Protezione</dt><dd>@ProtectionText(d.ProtectionKind)</dd>
+                <dt>Fattura</dt><dd>@(d.InvoiceFileName is null ? "Nessuna" : d.InvoiceFileName + " (allegata senza password)")</dd>
+            </dl>
+        </MudPaper>
+
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-2">Email inviate</MudText>
+            <dl class="detail-list">
+                <dt>Email con il referto</dt><dd>@StepText(d.ReportStatus, d.ReportSentAt)</dd>
+                <dt>Email con la password</dt><dd>@StepText(d.PasswordStatus, d.PasswordSentAt)</dd>
+            </dl>
+            @if (d.ReportError is not null || d.PasswordError is not null)
+            {
+                <details class="tech-details mt-2">
+                    <summary>Dettagli tecnici</summary>
+                    @if (d.ReportError is not null)
+                    {
+                        <pre>Referto: @d.ReportError</pre>
+                    }
+                    @if (d.PasswordError is not null)
+                    {
+                        <pre>Password: @d.PasswordError</pre>
+                    }
+                </details>
+            }
+        </MudPaper>
+
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-2">File caricati</MudText>
+            @if (d.Files.Count == 0)
+            {
+                <MudText Typo="Typo.body2">Nessun elenco disponibile@(d.IsLegacyImport ? " (invio importato dal vecchio sistema)" : "").</MudText>
+            }
+            else
+            {
+                <MudSimpleTable Dense="true" Elevation="0">
+                    <thead>
+                        <tr><th>Nome</th><th>Dimensione</th><th>SHA-256</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var file in d.Files)
+                        {
+                            <tr>
+                                <td>@file.FileName</td>
+                                <td>@FileSizeFormat.ToText(file.SizeBytes)</td>
+                                <td style="word-break: break-all; font-family: monospace;">@file.Sha256</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </MudPaper>
+    </div>
+}
 
 @code {
+    private DispatchDetail? _detail;
+    private string? _error;
+    private bool _loading = true;
+
     [Parameter]
     public Guid Id { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        var result = await History.GetAsync(Id);
+        _detail = result.Value;
+        _error = result.Succeeded ? null : result.Error;
+        _loading = false;
+    }
+
+    private static string PatientName(DispatchDetail d) =>
+        (d.PatientLastName + " " + d.PatientFirstName).Trim() is { Length: > 0 } name ? name : "—";
+
+    private static string ProtectionText(ProtectionKind kind) => kind switch
+    {
+        ProtectionKind.PdfAes => "PDF unico protetto da password",
+        ProtectionKind.ZipAes => "Archivio ZIP protetto da password",
+        _ => "Sconosciuta",
+    };
+
+    private static string StepText(DispatchStepStatus status, DateTime? sentAt) => status switch
+    {
+        DispatchStepStatus.Sent => sentAt is { } at ? $"Inviata il {DateDisplay.ToLocalText(at)}" : "Inviata",
+        DispatchStepStatus.Failed => "Non inviata (errore)",
+        DispatchStepStatus.Abandoned => "Non inviata (invio annullato)",
+        DispatchStepStatus.Pending => "In attesa",
+        _ => "Esito sconosciuto",
+    };
 }

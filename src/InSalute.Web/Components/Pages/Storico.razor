@@ -1,7 +1,126 @@
+@using InSalute.Web.Components.Shared
+@using InSalute.Core.Dispatching
 @using InSalute.Core.Security
+@using InSalute.Web.Services
 @attribute [Authorize(Policy = Policies.CanSend)]
 @page "/storico"
+@inject DispatchHistoryService History
+@inject TimeProvider Time
 
 <PageTitle>Storico invii · InSalute</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Storico invii</MudText>
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Storico invii</MudText>
+
+<MudPaper Class="pa-4 mb-4">
+    <div class="d-flex flex-wrap gap-4 align-end">
+        <MudDatePicker Label="Dal" Date="_from" DateChanged="d => FilterChangedAsync(() => _from = d)" Editable="true" Clearable="true"
+                       DateFormat="dd/MM/yyyy" Style="max-width: 170px;" />
+        <MudDatePicker Label="Al" Date="_to" DateChanged="d => FilterChangedAsync(() => _to = d)" Editable="true" Clearable="true"
+                       DateFormat="dd/MM/yyyy" Style="max-width: 170px;" />
+        <MudTextField T="string" Label="Cognome, nome o email" Value="_text" ValueChanged="t => FilterChangedAsync(() => _text = t)"
+                      DebounceInterval="400" Clearable="true" Style="min-width: 240px;" />
+        <MudSelect T="DispatchOverallStatus?" Label="Stato" Value="_status" ValueChanged="s => FilterChangedAsync(() => _status = s)"
+                   Clearable="true" Style="min-width: 220px;">
+            @foreach (var status in Enum.GetValues<DispatchOverallStatus>())
+            {
+                <MudSelectItem T="DispatchOverallStatus?" Value="@((DispatchOverallStatus?)status)">@status.Label()</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect T="string" Label="Operatore" Value="_operatorId" ValueChanged="o => FilterChangedAsync(() => _operatorId = o)"
+                   Clearable="true" Style="min-width: 200px;">
+            @foreach (var option in _operators)
+            {
+                <MudSelectItem T="string" Value="@option.Id">@option.DisplayName</MudSelectItem>
+            }
+        </MudSelect>
+    </div>
+</MudPaper>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+}
+
+@* Griglia di sola lettura: nessuna colonna modificabile. Il clic su una riga apre il dettaglio; il link nella prima colonna vale per la tastiera. *@
+<MudDataGrid @ref="_grid" T="DispatchListItem" ServerData="LoadAsync" ReadOnly="true" Filterable="false" SortMode="SortMode.None"
+             Hover="true" Dense="true" RowClick="OnRowClick" RowStyle="cursor: pointer;">
+    <Columns>
+        <TemplateColumn Title="Data e ora" Sortable="false">
+            <CellTemplate>
+                <MudLink Href="@($"storico/{context.Item.Id}")">@DateDisplay.ToLocalText(context.Item.CreatedAt)</MudLink>
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.Patient" Title="Paziente" Sortable="false" />
+        <PropertyColumn Property="x => x.RecipientEmail" Title="Email" Sortable="false" />
+        <PropertyColumn Property="x => x.OperatorName" Title="Operatore" Sortable="false" />
+        <TemplateColumn Title="Stato" Sortable="false">
+            <CellTemplate>
+                <StatoInvioChip Status="context.Item.Status" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="pa-4">Nessun invio trovato con questi filtri.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudDataGridPager T="DispatchListItem" PageSizeOptions="[PageSize]" InfoFormat="{first_item}-{last_item} di {all_items}" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private const int PageSize = 25;
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    private MudDataGrid<DispatchListItem>? _grid;
+    private IReadOnlyList<OperatorOption> _operators = [];
+    private string? _error;
+
+    // Predefinito: ultimi 30 giorni (non una data fissa come nel vecchio sistema).
+    private DateTime? _from;
+    private DateTime? _to;
+    private string? _text;
+    private DispatchOverallStatus? _status;
+    private string? _operatorId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Time.GetUtcNow(), TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome")).DateTime);
+        _from = today.AddDays(-30).ToDateTime(TimeOnly.MinValue);
+        _to = today.ToDateTime(TimeOnly.MinValue);
+
+        var operators = await History.GetOperatorsAsync();
+        _operators = operators.Succeeded ? operators.Value! : [];
+    }
+
+    private async Task FilterChangedAsync(Action apply)
+    {
+        apply();
+        if (_grid is not null)
+        {
+            await _grid.ReloadServerData();
+        }
+    }
+
+    private async Task<GridData<DispatchListItem>> LoadAsync(GridState<DispatchListItem> state, CancellationToken ct)
+    {
+        var filter = new DispatchFilter(
+            _from is { } from ? DateOnly.FromDateTime(from) : null,
+            _to is { } to ? DateOnly.FromDateTime(to) : null,
+            _text,
+            _status,
+            _operatorId);
+
+        var result = await History.QueryAsync(filter, state.Page, state.PageSize > 0 ? state.PageSize : PageSize, ct);
+        _error = result.Succeeded ? null : result.Error;
+        return new GridData<DispatchListItem>
+        {
+            Items = result.Value?.Items ?? [],
+            TotalItems = result.Value?.TotalCount ?? 0,
+        };
+    }
+
+    private void OnRowClick(DataGridRowClickEventArgs<DispatchListItem> args) =>
+        Navigation.NavigateTo($"storico/{args.Item.Id}");
+}
