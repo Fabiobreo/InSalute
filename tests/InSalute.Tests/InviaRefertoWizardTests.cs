@@ -459,6 +459,38 @@ public sealed class InviaRefertoWizardTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_truncated_pdf_is_rejected_as_unreadable_without_closing_the_procedure()
+    {
+        Render();
+        FillPatient();
+        Button("Avanti").Click();
+        var pdf = TestFiles.Pdf(2);
+
+        // PDFsharp lancia una System.Exception generica su un file troncato.
+        await UploadReportsAsync(("troncato.pdf", pdf[..(pdf.Length / 2)]));
+        Assert.Contains(Messaggi.PdfNonLeggibile, _cut.Markup);
+        Assert.Empty(Directory.EnumerateFiles(_env.TempPath, "*", SearchOption.AllDirectories));
+
+        await UploadReportsAsync(("buono.pdf", TestFiles.Pdf(1)));
+        Assert.False(IsDisabled(Button("Avanti")));
+    }
+
+    [Fact]
+    public async Task Choosing_more_than_a_hundred_files_rejects_the_extra_ones_instead_of_failing()
+    {
+        Render();
+        FillPatient();
+        Button("Avanti").Click();
+        var files = Enumerable.Range(1, 101).Select(i => ($"nota{i:000}.txt", new byte[] { 1, 2, 3 })).ToArray();
+
+        await UploadReportsAsync(files);
+
+        Assert.Equal(UploadLimits.MaxReports, Directory.EnumerateFiles(_env.TempPath, "*", SearchOption.AllDirectories).Count());
+        Assert.Contains(Messaggi.TroppiReferti, _cut.Markup);
+        Assert.Contains("nota101.txt", _cut.Markup);
+    }
+
+    [Fact]
     public async Task File_type_is_checked_case_insensitively_and_unknown_types_are_rejected()
     {
         Render();
@@ -514,6 +546,49 @@ public sealed class InviaRefertoWizardTests : IAsyncLifetime
         Button("Avanti").Click();
 
         Assert.Contains("La fattura sarà allegata senza password.", _cut.Markup);
+    }
+
+    // ---- file scaduti e invii abbandonati dalla pulizia --------------------------------------------------------
+
+    [Fact]
+    public async Task Files_deleted_by_the_cleanup_send_the_user_back_to_documents_with_the_files_marked()
+    {
+        Render();
+        await GoToSummaryAsync(OnePdf);
+        // La pulizia periodica ha cancellato la cartella dell'invio mentre l'operatore era al riepilogo.
+        Directory.Delete(Assert.Single(LeftoverDraftFolders()), recursive: true);
+
+        await SendAsync();
+
+        _cut.WaitForAssertion(() => Assert.Contains(Messaggi.FileScaduto, _cut.Markup));
+        Assert.Contains("Trascina qui i referti", _cut.Markup);
+        Assert.True(IsDisabled(Button("Avanti")));
+        Assert.Empty(_env.EmailSender.Sent);
+        using var scope = _env.CreateScope();
+        Assert.Empty(scope.ServiceProvider.GetRequiredService<AppDbContext>().Dispatches);
+    }
+
+    [Fact]
+    public async Task A_report_retry_on_a_dispatch_abandoned_by_the_cleanup_is_not_offered_again()
+    {
+        Render();
+        await GoToSummaryAsync(OnePdf);
+        _env.EmailSender.FailWith = SendResult.Fail(SendErrorCode.ConnectionFailed, "boom");
+        await SendAsync();
+        _cut.WaitForAssertion(() => Assert.True(HasButton("Riprova invio referto")));
+
+        _env.Clock.Now = _env.Clock.Now.AddMinutes(61);
+        using (var scope = _env.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<DispatchCleanupService>().RunAsync();
+        }
+        _env.EmailSender.FailWith = null;
+        Click("Riprova invio referto");
+
+        _cut.WaitForAssertion(() => Assert.Contains(Messaggi.InvioNonPiuValido, _cut.Markup));
+        Assert.False(HasButton("Riprova invio referto"));
+        Assert.True(HasButton("Annulla invio"));
+        Assert.Empty(_env.EmailSender.Sent);
     }
 
     // ---- passo 3 / avviso SMTP ---------------------------------------------------------------------------------

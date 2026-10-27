@@ -43,9 +43,9 @@ else
             </MudSelect>
             <MudTextField @bind-Value="_userName" Label="Nome utente" autocomplete="off"
                           HelperText="Lascia vuoto solo se il server non richiede autenticazione." />
-            <MudTextField @bind-Value="_newPassword" Label="@(_hasPassword ? "Nuova password (lascia vuoto per non cambiarla)" : "Password")"
+            <MudTextField @bind-Value="_newPassword" Label="@PasswordLabel"
                           InputType="InputType.Password" autocomplete="new-password"
-                          HelperText="@(_hasPassword ? "Password impostata ✓" : null)" />
+                          HelperText="@PasswordHelper" />
             <MudTextField @bind-Value="_fromAddress" Label="Indirizzo mittente" InputType="InputType.Email" Required="true"
                           RequiredError="Inserisci l'indirizzo del mittente." />
             <MudTextField @bind-Value="_fromName" Label="Nome mittente" MaxLength="100" />
@@ -110,6 +110,21 @@ else
     private string _fromAddress = "";
     private string _fromName = "";
 
+    // Server e nome utente per cui vale la password salvata: se cambiano, la password va inserita di nuovo.
+    private string _savedHost = "";
+    private string _savedUserName = "";
+
+    private bool PasswordMustBeReentered =>
+        _hasPassword && SmtpSettingsService.RequiresNewPassword(_savedHost, _savedUserName, _host ?? "", _userName ?? "");
+
+    private string PasswordLabel => _hasPassword && !PasswordMustBeReentered
+        ? "Nuova password (lascia vuoto per non cambiarla)"
+        : "Password";
+
+    private string? PasswordHelper => !_hasPassword ? null
+        : PasswordMustBeReentered ? "Hai cambiato server o nome utente: inserisci di nuovo la password."
+        : "Password impostata ✓";
+
     private string _testAddress = "";
     private bool _testing;
     private bool _testSucceeded;
@@ -129,6 +144,8 @@ else
             _port = settings.Port;
             _security = settings.Security;
             _userName = settings.UserName;
+            _savedHost = settings.Host;
+            _savedUserName = settings.UserName;
             _hasPassword = settings.HasPassword;
             _fromAddress = settings.FromAddress;
             _fromName = settings.FromName;
@@ -172,6 +189,8 @@ else
                 _hasPassword = false;
             }
             _newPassword = null;
+            _savedHost = _host;
+            _savedUserName = _userName;
             Snackbar.Add("Impostazioni salvate.", Severity.Success);
         }
         else

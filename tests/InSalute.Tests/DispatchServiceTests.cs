@@ -469,6 +469,8 @@ public class DispatchServiceTests : IAsyncLifetime
         var report = await SendReportAsync(prepared);
 
         Assert.False(report.Attempted);
+        Assert.False(report.Succeeded);
+        Assert.Equal(Messaggi.InvioNonPiuValido, report.UserMessage);
         Assert.Empty(_env.EmailSender.Sent);
     }
 

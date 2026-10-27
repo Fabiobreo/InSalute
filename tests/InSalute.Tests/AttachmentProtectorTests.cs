@@ -131,6 +131,46 @@ public class AttachmentProtectorTests : IDisposable
             [Source("rotto.pdf", Encoding.ASCII.GetBytes("non sono un pdf"))], _output, Password));
     }
 
+    /// <summary>
+    /// PDF danneggiati su cui PDFsharp lancia eccezioni diverse da PdfReaderException (Exception generica,
+    /// ArgumentOutOfRange) oppure li apre "con 0 pagine" e fallisce scorrendo le pagine (NullReference).
+    /// </summary>
+    public static TheoryData<string> DamagedPdfs => ["troncato", "solo-intestazione", "senza-root", "kids-rotto"];
+
+    private static byte[] Damaged(string kind)
+    {
+        var pdf = TestFiles.Pdf(2);
+        var text = Encoding.Latin1.GetString(pdf);
+        return kind switch
+        {
+            "troncato" => pdf[..(pdf.Length / 2)],
+            "solo-intestazione" => Encoding.ASCII.GetBytes("%PDF-1.4\n%%EOF"),
+            "senza-root" => Encoding.Latin1.GetBytes(text.Replace("/Root", "/Rxxx")),
+            "kids-rotto" => Encoding.Latin1.GetBytes(text.Replace("/Kids", "/Kxxx")),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(DamagedPdfs))]
+    public async Task Damaged_pdf_is_rejected_by_inspection_as_unreadable(string kind)
+    {
+        var input = Source("rotto.pdf", Damaged(kind));
+
+        var ex = await Assert.ThrowsAsync<InvalidPdfException>(() => _protector.InspectPdfAsync(input.FilePath, input.OriginalFileName));
+        Assert.Equal("rotto.pdf", ex.OriginalFileName);
+    }
+
+    [Theory]
+    [MemberData(nameof(DamagedPdfs))]
+    public async Task Damaged_pdf_is_rejected_by_protection_and_leaves_no_output(string kind)
+    {
+        await Assert.ThrowsAsync<InvalidPdfException>(() => _protector.ProtectAsync(
+            [Source("ok.pdf", TestFiles.Pdf(1)), Source("rotto.pdf", Damaged(kind))], _output, Password));
+
+        Assert.Empty(Directory.Exists(_output) ? Directory.GetFiles(_output) : []);
+    }
+
     [Fact]
     public async Task Output_goes_to_the_given_folder_and_never_next_to_the_originals()
     {

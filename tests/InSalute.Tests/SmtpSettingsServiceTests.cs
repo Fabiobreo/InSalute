@@ -2,6 +2,7 @@ using InSalute.Core.Data;
 using InSalute.Core.Domain;
 using InSalute.Core.Email;
 using InSalute.Core.Settings;
+using InSalute.Core.Texts;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -83,13 +84,41 @@ public class SmtpSettingsServiceTests : IAsyncLifetime
         await RunAsync(s => s.SaveAsync(Input()));
         var first = (await StoredAsync()).ProtectedPassword;
 
-        Assert.True((await RunAsync(s => s.SaveAsync(Input(password: null) with { Host = "altro.example.test" }))).Succeeded);
+        Assert.True((await RunAsync(s => s.SaveAsync(Input(password: null) with { Port = 587, Security = SmtpSecurity.StartTls, FromName = "Altro" }))).Succeeded);
         var kept = await StoredAsync();
         Assert.Equal(first, kept.ProtectedPassword);
-        Assert.Equal("altro.example.test", kept.Host);
+        Assert.Equal(587, kept.Port);
 
         Assert.True((await RunAsync(s => s.SaveAsync(Input(password: "NuovaPassword99")))).Succeeded);
         Assert.NotEqual(first, (await StoredAsync()).ProtectedPassword);
+    }
+
+    [Theory]
+    [InlineData("server-attaccante.example.test", "info@example.test")]
+    [InlineData("smtp.example.test", "altro@example.test")]
+    public async Task Changing_host_or_user_name_requires_the_password_again(string host, string userName)
+    {
+        await RunAsync(s => s.SaveAsync(Input()));
+        var before = await StoredAsync();
+
+        var withoutPassword = await RunAsync(s => s.SaveAsync(Input(password: null, userName: userName) with { Host = host }));
+
+        Assert.False(withoutPassword.Succeeded);
+        Assert.Equal(Messaggi.PasswordSmtpDaReinserire, withoutPassword.Error);
+        var unchanged = await StoredAsync();
+        Assert.Equal(before.Host, unchanged.Host);
+        Assert.Equal(before.UserName, unchanged.UserName);
+
+        var withPassword = await RunAsync(s => s.SaveAsync(Input(password: "NuovaPassword99", userName: userName) with { Host = host }));
+        Assert.True(withPassword.Succeeded, withPassword.Error);
+        Assert.Equal(host, (await StoredAsync()).Host);
+    }
+
+    [Fact]
+    public void Host_and_user_name_are_compared_ignoring_case_and_spaces()
+    {
+        Assert.False(SmtpSettingsService.RequiresNewPassword("smtp.example.test", "Info@Example.test", " SMTP.example.test ", "info@example.test"));
+        Assert.True(SmtpSettingsService.RequiresNewPassword("smtp.example.test", "info@example.test", "smtp.example.test.evil", "info@example.test"));
     }
 
     [Fact]

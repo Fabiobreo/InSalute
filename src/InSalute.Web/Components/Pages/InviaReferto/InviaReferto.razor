@@ -2,6 +2,7 @@
 @using InSalute.Core.Dispatching
 @using InSalute.Core.Security
 @using InSalute.Core.Settings
+@using InSalute.Core.Texts
 @attribute [Authorize(Policy = Policies.CanSend)]
 @page "/"
 @implements IAsyncDisposable
@@ -91,8 +92,41 @@
 
     private async Task GoTo(int step)
     {
+        // Prima del riepilogo e dell'invio i file devono esserci ancora: la pulizia periodica cancella le cartelle
+        // ferme da più di 60 minuti. Se mancano si torna ai documenti, con i file da ricaricare segnalati.
+        if (step is 3 or 4 && _draft.Prepared is null && MarkExpiredFiles())
+        {
+            step = 2;
+        }
+
         _step = step;
         await UpdateGuardAsync();
+    }
+
+    /// <summary>I file accettati che non sono più sul disco diventano rifiutati. Vero se ce n'era almeno uno.</summary>
+    private bool MarkExpiredFiles()
+    {
+        bool IsMissing(DraftFile? file) =>
+            file?.Stored is { } stored && TempFiles.ResolveFile(_draft.DraftId, stored.StoredName) is null;
+
+        static DraftFile Expired(DraftFile file) =>
+            new() { Name = file.Name, SizeBytes = file.SizeBytes, Error = Messaggi.FileScaduto };
+
+        var expired = false;
+        for (var i = 0; i < _draft.Reports.Count; i++)
+        {
+            if (IsMissing(_draft.Reports[i]))
+            {
+                _draft.Reports[i] = Expired(_draft.Reports[i]);
+                expired = true;
+            }
+        }
+        if (IsMissing(_draft.Invoice))
+        {
+            _draft.Invoice = Expired(_draft.Invoice!);
+            expired = true;
+        }
+        return expired;
     }
 
     private async Task UpdateGuardAsync()

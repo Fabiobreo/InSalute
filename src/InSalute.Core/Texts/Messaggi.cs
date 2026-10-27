@@ -34,6 +34,7 @@ public static class Messaggi
     public const string MittenteNonValido = "L'indirizzo del mittente non è valido.";
     public const string NomeMittenteTroppoLungo = "Il nome del mittente può avere al massimo 100 caratteri.";
     public const string PasswordSmtpObbligatoria = "Inserisci la password del server di posta.";
+    public const string PasswordSmtpDaReinserire = "Hai cambiato il server o il nome utente: inserisci di nuovo la password del server di posta.";
     public const string SmtpNonConfigurato = "Le impostazioni SMTP non sono ancora state configurate.";
     public const string IndirizzoProvaNonValido = "L'indirizzo email di prova non è valido.";
     public const string ModelloVuoto = "Oggetto e corpo del modello non possono essere vuoti.";
@@ -50,6 +51,7 @@ public static class Messaggi
     public const string TotaleTroppoGrande = "I referti superano i 50 MB in totale.";
     public const string FatturaNonPdf = "La fattura deve essere un file PDF.";
     public const string FileNonDisponibile = "Uno dei file caricati non è più disponibile. Carica di nuovo i documenti.";
+    public const string FileScaduto = "Il file non è più disponibile (dopo 60 minuti senza attività i file vengono cancellati). Rimuovilo e caricalo di nuovo.";
     public const string PdfGiaProtetto = "Questo PDF è già protetto da password. Rimuovi la protezione o carica il file originale.";
     public const string PdfNonLeggibile = "Il file PDF non è leggibile. Controlla che non sia danneggiato.";
     public const string InvioGiaPreparato = "Questo invio è già stato avviato.";

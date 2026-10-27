@@ -82,6 +82,12 @@ public sealed class SmtpSettingsService(
         {
             return OperationResult.Fail(Messaggi.PasswordSmtpObbligatoria);
         }
+        // La password salvata vale solo per il server e l'utente per cui è stata inserita: altrimenti chi gestisce le
+        // impostazioni potrebbe puntare l'host su un proprio server e farsela consegnare dall'autenticazione SMTP.
+        if (userName.Length > 0 && !hasNewPassword && !isNew && RequiresNewPassword(settings.Host, settings.UserName, input.Host, userName))
+        {
+            return OperationResult.Fail(Messaggi.PasswordSmtpDaReinserire);
+        }
 
         settings.Host = input.Host.Trim();
         settings.Port = input.Port;
@@ -130,6 +136,11 @@ public sealed class SmtpSettingsService(
             new EmailMessage(toAddress.Trim(), Messaggi.OggettoEmailProva, Messaggi.CorpoEmailProva), ct);
         return OperationResult<SendResult>.Ok(result);
     }
+
+    /// <summary>Vero se server o nome utente cambiano rispetto a quelli salvati (la UI lo usa per chiedere la password).</summary>
+    public static bool RequiresNewPassword(string savedHost, string savedUserName, string host, string userName) =>
+        !string.Equals(savedHost.Trim(), host.Trim(), StringComparison.OrdinalIgnoreCase)
+        || !string.Equals(savedUserName.Trim(), userName.Trim(), StringComparison.OrdinalIgnoreCase);
 
     public static string? Validate(SmtpSettingsInput input)
     {

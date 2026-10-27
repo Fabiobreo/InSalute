@@ -4,6 +4,7 @@
 @implements IDisposable
 @inject TempFileStore TempFiles
 @inject AttachmentProtector Protector
+@inject ILogger<StepDocumenti> Logger
 
 <div class="d-flex flex-column gap-4">
     <MudText Typo="Typo.h6" HtmlTag="h2">Documenti</MudText>
@@ -135,8 +136,9 @@
         _uploading = true;
         try
         {
-            // Caricarne altri aggiunge all'elenco, non lo sostituisce.
-            foreach (var browserFile in e.GetMultipleFiles(maximumFileCount: 100))
+            // Caricarne altri aggiunge all'elenco, non lo sostituisce. Si leggono tutti quelli scelti (GetMultipleFiles
+            // lancia un'eccezione se sono più del massimo indicato): oltre il limite dei referti vengono rifiutati uno per uno.
+            foreach (var browserFile in e.GetMultipleFiles(maximumFileCount: Math.Max(1, e.FileCount)))
             {
                 Draft.Reports.Add(await ReceiveReportAsync(browserFile));
                 StateHasChanged();
@@ -180,8 +182,10 @@
             await using var stream = browserFile.OpenReadStream(UploadLimits.MaxFileBytes, _cts.Token);
             stored = await TempFiles.SaveAsync(Draft.DraftId, name, stream, _cts.Token);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Un'eccezione non gestita chiuderebbe il circuito e la procedura: il file viene solo rifiutato.
+            Logger.LogWarning(ex, "Caricamento di un referto non riuscito per l'invio {DispatchId}", Draft.DraftId);
             return Rejected(Messaggi.ErroreGenerico);
         }
 
@@ -199,8 +203,13 @@
                 TempFiles.DeleteFile(Draft.DraftId, stored.StoredName);
                 return Rejected(Messaggi.PdfGiaProtetto);
             }
-            catch (InvalidPdfException)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                // InvalidPdfException, ma anche qualsiasi altro errore di lettura: il PDF non viene accettato.
+                if (ex is not InvalidPdfException)
+                {
+                    Logger.LogWarning(ex, "Controllo di un PDF non riuscito per l'invio {DispatchId}", Draft.DraftId);
+                }
                 TempFiles.DeleteFile(Draft.DraftId, stored.StoredName);
                 return Rejected(Messaggi.PdfNonLeggibile);
             }
@@ -241,8 +250,9 @@
         catch (OperationCanceledException)
         {
         }
-        catch (IOException)
+        catch (Exception ex)
         {
+            Logger.LogWarning(ex, "Caricamento della fattura non riuscito per l'invio {DispatchId}", Draft.DraftId);
             Draft.Invoice = Rejected(Messaggi.ErroreGenerico);
         }
         finally

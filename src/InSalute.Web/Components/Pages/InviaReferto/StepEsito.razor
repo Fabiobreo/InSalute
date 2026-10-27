@@ -146,6 +146,8 @@
                 var report = await Dispatcher.SendReportAsync(Draft.Prepared!, _cts.Token);
                 if (!report.Succeeded)
                 {
+                    // Nessuna email tentata (invio abbandonato o permessi revocati): "Riprova" non funzionerebbe mai.
+                    _stale = !report.Attempted;
                     _report = StatoPassoEsito.Fallito;
                     _password = StatoPassoEsito.NonTentato;
                     _reportMessage = report.UserMessage ?? Messaggi.ErroreGenerico;

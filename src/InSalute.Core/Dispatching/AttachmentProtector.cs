@@ -48,8 +48,9 @@ public sealed class AttachmentProtector
         Task.Run(
             () =>
             {
-                using var document = OpenForImport(new ProtectionInput(filePath, originalFileName));
-                return document.PageCount;
+                var report = new ProtectionInput(filePath, originalFileName);
+                using var document = OpenForImport(report);
+                return ReadPages(document, report).Count;
             },
             ct);
 
@@ -83,9 +84,16 @@ public sealed class AttachmentProtector
                 ct.ThrowIfCancellationRequested();
                 var source = OpenForImport(report);
                 sources.Add(source);
-                foreach (var page in source.Pages)
+                foreach (var page in ReadPages(source, report))
                 {
-                    output.AddPage(page);
+                    try
+                    {
+                        output.AddPage(page);
+                    }
+                    catch (Exception ex) when (IsReadError(ex))
+                    {
+                        throw new InvalidPdfException(report.OriginalFileName);
+                    }
                 }
             }
 
@@ -128,16 +136,40 @@ public sealed class AttachmentProtector
         {
             return PdfReader.Open(report.FilePath, PdfDocumentOpenMode.Import);
         }
-        catch (PdfReaderException) when (HasEncryptionDictionary(report.FilePath))
+        catch (Exception ex) when (IsReadError(ex) && HasEncryptionDictionary(report.FilePath))
         {
             // PDFsharp non apre un PDF che richiede la password: non si può unire né ricifrare.
             throw new ProtectedPdfException(report.OriginalFileName);
         }
-        catch (Exception ex) when (ex is PdfReaderException or InvalidOperationException)
+        catch (Exception ex) when (IsReadError(ex))
         {
             throw new InvalidPdfException(report.OriginalFileName);
         }
     }
+
+    /// <summary>
+    /// Pagine del documento. Con un PDF rotto PDFsharp può aprirlo "con 0 pagine" o fallire solo qui, con eccezioni
+    /// qualsiasi (NullReference, ArgumentOutOfRange...): tutte diventano <see cref="InvalidPdfException"/>.
+    /// </summary>
+    private static List<PdfPage> ReadPages(PdfDocument document, ProtectionInput report)
+    {
+        List<PdfPage> pages;
+        try
+        {
+            pages = [.. document.Pages];
+        }
+        catch (Exception ex) when (IsReadError(ex))
+        {
+            throw new InvalidPdfException(report.OriginalFileName);
+        }
+        return pages.Count > 0 ? pages : throw new InvalidPdfException(report.OriginalFileName);
+    }
+
+    /// <summary>
+    /// PDFsharp, con file danneggiati, lancia tipi di eccezione diversi (anche <see cref="Exception"/> generica per un
+    /// file troncato): sono tutti "PDF non leggibile". Restano fuori solo annullamento e memoria esaurita.
+    /// </summary>
+    private static bool IsReadError(Exception ex) => ex is not (OperationCanceledException or OutOfMemoryException);
 
     private static bool HasEncryptionDictionary(string path)
     {

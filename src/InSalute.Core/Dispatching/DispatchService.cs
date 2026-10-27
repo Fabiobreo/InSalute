@@ -280,9 +280,14 @@ public sealed class DispatchService(
             return DispatchStepResult.NotAttempted(denied);
         }
 
+        if (dispatch.ReportStatus == DispatchStepStatus.Sent)
+        {
+            return new DispatchStepResult(false, true);
+        }
         if (dispatch.ReportStatus is not (DispatchStepStatus.Pending or DispatchStepStatus.Failed))
         {
-            return new DispatchStepResult(false, dispatch.ReportStatus == DispatchStepStatus.Sent);
+            // Abbandonato (dall'operatore o dalla pulizia periodica): riprovare non servirebbe.
+            return DispatchStepResult.NotAttempted(Messaggi.InvioNonPiuValido);
         }
 
         var template = await LoadTemplateAsync(EmailTemplateKind.Report, ct);

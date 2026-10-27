@@ -29,17 +29,12 @@ public sealed class MailKitEmailSender(AppDbContext db, IDataProtectionProvider 
         {
             var mime = BuildMessage(settings, message, streams);
 
+            var password = string.IsNullOrEmpty(settings.UserName)
+                ? null
+                : dataProtection.CreateProtector(SmtpSettingsService.PasswordPurpose).Unprotect(settings.ProtectedPassword);
+
             using var client = new SmtpClient { Timeout = TimeoutMilliseconds };
-            await client.ConnectAsync(settings.Host, settings.Port, ToSocketOptions(settings.Security), ct);
-            if (!string.IsNullOrEmpty(settings.UserName))
-            {
-                var password = dataProtection.CreateProtector(SmtpSettingsService.PasswordPurpose)
-                    .Unprotect(settings.ProtectedPassword);
-                await client.AuthenticateAsync(settings.UserName, password, ct);
-            }
-            await client.SendAsync(mime, ct);
-            await client.DisconnectAsync(true, CancellationToken.None);
-            return SendResult.Ok();
+            return await DeliverAsync(client, settings, password, mime, ct);
         }
         catch (Exception ex)
         {
@@ -52,6 +47,32 @@ public sealed class MailKitEmailSender(AppDbContext db, IDataProtectionProvider 
                 await stream.DisposeAsync();
             }
         }
+    }
+
+    /// <summary>
+    /// Connessione, autenticazione (se <paramref name="password"/> non è null) e invio. Le eccezioni fino all'invio
+    /// arrivano al chiamante; dopo che il server ha accettato il messaggio l'esito è <c>Ok</c> anche se il QUIT fallisce,
+    /// altrimenti un'email consegnata risulterebbe non inviata (e verrebbe rimandata o annullata).
+    /// </summary>
+    public static async Task<SendResult> DeliverAsync(
+        IMailTransport client, SmtpSettings settings, string? password, MimeMessage mime, CancellationToken ct)
+    {
+        await client.ConnectAsync(settings.Host, settings.Port, ToSocketOptions(settings.Security), ct);
+        if (password is not null)
+        {
+            await client.AuthenticateAsync(settings.UserName, password, ct);
+        }
+        await client.SendAsync(mime, ct);
+
+        try
+        {
+            await client.DisconnectAsync(true, CancellationToken.None);
+        }
+        catch (Exception)
+        {
+            // Il messaggio è già stato accettato dal server: un QUIT non riuscito non cambia l'esito.
+        }
+        return SendResult.Ok();
     }
 
     public static SecureSocketOptions ToSocketOptions(SmtpSecurity security) => security switch
