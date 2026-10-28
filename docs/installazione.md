@@ -42,7 +42,16 @@ dotnet publish src/InSalute.Web -c Release -r win-x64 --self-contained -o publis
 ```
 
 L'app è *self-contained*: sul server **non** serve installare il runtime .NET. La cartella `publish` (circa 150 MB)
-va copiata sul server. Lo script del database si genera sul PC di sviluppo:
+va copiata sul server. Anche la console di import dal vecchio sistema (punto 9) si pubblica a parte, nello stesso modo:
+
+```powershell
+dotnet publish tools/InSalute.LegacyImport -c Release -r win-x64 --self-contained -o publish-import
+```
+
+La cartella `publish-import` serve solo per l'import: copiarla sul server in una cartella di lavoro (es.
+`C:\InSaluteData\import`), **non** in `C:\Program Files\InSalute`, e cancellarla a import concluso.
+
+Lo script del database si genera sul PC di sviluppo:
 
 ```powershell
 dotnet ef migrations script --idempotent --project src/InSalute.Core --startup-project src/InSalute.Web -o insalute.sql
@@ -178,15 +187,59 @@ New-NetFirewallRule -DisplayName "InSalute HTTPS" -Direction Inbound -Protocol T
 
 ## 9. Import dal vecchio sistema (fase 7)
 
-Prima una simulazione sulla **copia** del vecchio database:
+> **Ordine obbligatorio: prima il primo avvio dell'app (punto 6), poi l'import.** L'account `SuperAdmin` viene creato
+> solo se nel database non c'è **nessun** utente. Gli utenti importati sono tutti disattivati: se l'import viene fatto
+> prima del primo avvio, il SuperAdmin non viene creato e nessuno può accedere. Se succede: svuotare `InSaluteV2`
+> (ricrearlo ed eseguire di nuovo `insalute.sql`), avviare il servizio e solo dopo rifare l'import.
 
-```powershell
-InSalute.LegacyImport.exe --source "<connection string del vecchio DB>" --target "<connection string di InSaluteV2>" --dry-run
+L'import si esegue da una console amministratore sul server, con un account che può leggere il vecchio database e
+scrivere su `InSaluteV2` (connection string con `Trusted_Connection=True`). Stampa solo conteggi, mai dati dei pazienti.
+
+### 9.1 Simulazione su una copia
+
+Fare una copia del vecchio database (`COPY_ONLY` non interferisce con eventuali backup già pianificati) e ripristinarla
+con un altro nome, es. `VecchioDbCopia`:
+
+```sql
+BACKUP DATABASE [<VECCHIO DB>] TO DISK='C:\InSaluteData\backup\vecchio-copia.bak' WITH COPY_ONLY, INIT
+RESTORE DATABASE VecchioDbCopia FROM DISK='C:\InSaluteData\backup\vecchio-copia.bak' WITH MOVE ... TO ...
 ```
 
-Se i conteggi sono coerenti, rilanciarlo senza `--dry-run`. Gli utenti importati sono **disattivati** e senza
-password: un Admin li riattiva e assegna una password temporanea dalla pagina Utenti. Una seconda esecuzione non
-aggiunge nulla. Se «non importabili» è diverso da zero, controllare il motivo (di solito email o nomi utente duplicati).
+```powershell
+C:\InSaluteData\import\InSalute.LegacyImport.exe --source "<connection string di VecchioDbCopia>" --target "<connection string di InSaluteV2>" --dry-run
+```
+
+Controllare i conteggi. Se «non importabili» è diverso da zero, controllarne il motivo: di solito email o nomi utente
+duplicati, anche rispetto agli utenti già creati in InSalute (per esempio l'Admin del centro creato al punto 8 con lo
+stesso nome utente o la stessa email di un vecchio utente).
+
+### 9.2 Passaggio definitivo (cutover)
+
+Fuori dall'orario della segreteria:
+
+1. Avvisare la segreteria e **chiudere il vecchio client WPF** su tutte le postazioni: da qui in poi nessun invio dal
+   vecchio sistema.
+2. Fare un backup di `InSaluteV2` (come al punto 10) prima di scrivere.
+3. Lanciare l'import **senza** `--dry-run` sul vecchio database (o su una copia fatta in quel momento, come al 9.1):
+
+   ```powershell
+   C:\InSaluteData\import\InSalute.LegacyImport.exe --source "<connection string del vecchio DB>" --target "<connection string di InSaluteV2>"
+   ```
+
+   Rilanciarlo è sicuro: utenti e invii già importati non vengono aggiunti di nuovo. Se dopo la simulazione il vecchio
+   sistema è stato ancora usato, questa esecuzione aggiunge solo le righe nuove.
+4. Aprire *Storico* in InSalute e controllare che gli invii importati ci siano (data dell'ultimo invio del vecchio sistema).
+5. Gli utenti importati sono **disattivati** e senza password: l'Admin riattiva quelli ancora in servizio e assegna a
+   ciascuno una password temporanea dalla pagina *Utenti* (verrà chiesto di cambiarla al primo accesso).
+6. Lasciare il vecchio sistema **spento ma intatto** (Web API su IIS e database) finché il nuovo non è stato usato
+   qualche giorno senza problemi; la rimozione è la fase 10. Il vecchio database resta la copia di riferimento.
+7. Cancellare `C:\InSaluteData\import` e la copia `VecchioDbCopia` (e il relativo `.bak`).
+
+| Voce | Valore |
+|---|---|
+| Data e ora del cutover | DA COMPILARE |
+| Conteggi della simulazione (utenti / invii / non importabili) | DA COMPILARE |
+| Conteggi dell'import definitivo | DA COMPILARE |
 
 ## 10. Backup
 
