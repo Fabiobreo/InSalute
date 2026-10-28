@@ -475,6 +475,55 @@ public sealed class InviaRefertoWizardTests : IAsyncLifetime
         Assert.False(IsDisabled(Button("Avanti")));
     }
 
+    /// <summary>Sceglie dei file come farebbe il browser, ma con stream controllati dal test.</summary>
+    private Task ChooseAsync(int input, params IBrowserFile[] files) =>
+        _cut.InvokeAsync(() => _cut.FindComponents<InputFile>()[input].Instance.OnChange
+            .InvokeAsync(new InputFileChangeEventArgs(files)));
+
+    [Fact]
+    public async Task A_report_whose_connection_drops_is_rejected_and_the_procedure_can_go_on()
+    {
+        _env.Storage.UploadIdleTimeout = TimeSpan.FromMilliseconds(300);
+        Render();
+        FillPatient();
+        Button("Avanti").Click();
+
+        var choosing = ChooseAsync(0,
+            new StreamBrowserFile("bloccato.pdf", 10, () => new StalledStream([1, 2, 3])),
+            new StreamBrowserFile("buono.pdf", TestFiles.Pdf(1).Length, () => new MemoryStream(TestFiles.Pdf(1))));
+
+        // Prima che scada l'attesa il caricamento è in corso e non si può andare avanti.
+        Assert.Contains("Caricamento in corso", _cut.Markup);
+        Assert.True(IsDisabled(Button("Avanti")));
+
+        await choosing.WaitAsync(TimeSpan.FromSeconds(10));
+        WaitForUploads(["bloccato.pdf", "buono.pdf"]);
+        Assert.Contains(Messaggi.CaricamentoInterrotto, _cut.Markup);
+        Assert.False(IsDisabled(Button("Avanti")));
+        Assert.Single(Directory.EnumerateFiles(_env.TempPath, "*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task Next_stays_disabled_while_reports_are_uploading_even_if_the_invoice_has_finished()
+    {
+        _env.Storage.UploadIdleTimeout = TimeSpan.FromMilliseconds(500);
+        Render();
+        FillPatient();
+        Button("Avanti").Click();
+        await UploadReportsAsync(("primo.pdf", TestFiles.Pdf(1)));
+
+        var reports = ChooseAsync(0, new StreamBrowserFile("lento.pdf", 10, () => new StalledStream([])));
+        await ChooseAsync(1, new StreamBrowserFile("fattura.pdf", TestFiles.Pdf(1).Length, () => new MemoryStream(TestFiles.Pdf(1))));
+
+        // La fattura è arrivata, ma un referto è ancora in caricamento.
+        _cut.WaitForAssertion(() => Assert.Contains("fattura.pdf", _cut.Markup));
+        Assert.Contains("Caricamento in corso", _cut.Markup);
+        Assert.True(IsDisabled(Button("Avanti")));
+
+        await reports.WaitAsync(TimeSpan.FromSeconds(10));
+        _cut.WaitForState(() => !IsDisabled(Button("Avanti")));
+    }
+
     [Fact]
     public async Task Choosing_more_than_a_hundred_files_rejects_the_extra_ones_instead_of_failing()
     {

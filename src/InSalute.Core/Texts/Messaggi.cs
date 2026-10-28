@@ -52,6 +52,7 @@ public static class Messaggi
     public const string FatturaNonPdf = "La fattura deve essere un file PDF.";
     public const string FileNonDisponibile = "Uno dei file caricati non è più disponibile. Carica di nuovo i documenti.";
     public const string FileScaduto = "Il file non è più disponibile (dopo 60 minuti senza attività i file vengono cancellati). Rimuovilo e caricalo di nuovo.";
+    public const string CaricamentoInterrotto = "Il caricamento si è interrotto (connessione assente o troppo lenta). Rimuovi il file e caricalo di nuovo.";
     public const string PdfGiaProtetto = "Questo PDF è già protetto da password. Rimuovi la protezione o carica il file originale.";
     public const string PdfNonLeggibile = "Il file PDF non è leggibile. Controlla che non sia danneggiato.";
     public const string InvioGiaPreparato = "Questo invio è già stato avviato.";

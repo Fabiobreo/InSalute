@@ -8,6 +8,8 @@ using InSalute.Core.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Data.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Microsoft.Extensions.Logging;
@@ -62,6 +64,25 @@ public sealed class TestClock : TimeProvider
     public override DateTimeOffset GetUtcNow() => Now;
 }
 
+/// <summary>
+/// Rallenta le letture del database: con SQLite in memoria le query finiscono quasi subito e due operazioni
+/// sovrapposte sullo stesso DbContext (errore che su SQL Server capita davvero) non si vedrebbero.
+/// </summary>
+public sealed class QueryDelay : DbCommandInterceptor
+{
+    public TimeSpan Delay { get; set; }
+
+    public override async ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+        DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+    {
+        if (Delay > TimeSpan.Zero)
+        {
+            await Task.Delay(Delay, cancellationToken);
+        }
+        return result;
+    }
+}
+
 /// <summary>Database SQLite in-memory con Identity configurato come in produzione.</summary>
 public sealed class TestEnvironment : IAsyncDisposable
 {
@@ -76,10 +97,15 @@ public sealed class TestEnvironment : IAsyncDisposable
 
     public TestClock Clock { get; } = new();
 
+    public QueryDelay QueryDelay { get; } = new();
+
     /// <summary>Cartella temporanea dei file in lavorazione, solo per questo ambiente.</summary>
     public string TempPath { get; } = Path.Combine(Path.GetTempPath(), "insalute-tests", Guid.NewGuid().ToString("N"));
 
     public RetentionOptions Retention { get; } = new();
+
+    /// <summary>Si può cambiare prima di usare i servizi (ad esempio il tempo massimo di attesa dei caricamenti).</summary>
+    public StorageOptions Storage { get; }
 
     public TestEnvironment()
     {
@@ -88,13 +114,14 @@ public sealed class TestEnvironment : IAsyncDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddDataProtection();
-        services.AddDbContext<AppDbContext>(o => o.UseSqlite(_connection));
+        services.AddDbContext<AppDbContext>(o => o.UseSqlite(_connection).AddInterceptors(QueryDelay));
         services.AddInSaluteIdentity();
         services.AddSingleton<ICurrentUser>(CurrentUser);
         services.AddInSaluteSettings();
         services.AddSingleton<IEmailSender>(EmailSender);
         services.AddSingleton<TimeProvider>(Clock);
-        services.AddSingleton<IOptions<StorageOptions>>(Options.Create(new StorageOptions { TempPath = TempPath }));
+        Storage = new StorageOptions { TempPath = TempPath };
+        services.AddSingleton<IOptions<StorageOptions>>(Options.Create(Storage));
         services.AddSingleton<IOptions<RetentionOptions>>(Options.Create(Retention));
         services.AddInSaluteDispatching();
         _root = services.BuildServiceProvider();

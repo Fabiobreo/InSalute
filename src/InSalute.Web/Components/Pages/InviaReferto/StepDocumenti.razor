@@ -20,7 +20,7 @@
             <InputFile OnChange="OnReportsChosenAsync" multiple accept="@Accept" aria-label="Scegli i referti da caricare" />
         </div>
 
-        @if (_uploading)
+        @if (Uploading)
         {
             <div class="d-flex align-center gap-2 mt-2" role="status">
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" />
@@ -99,7 +99,11 @@
 
 @code {
     private readonly CancellationTokenSource _cts = new();
-    private bool _uploading;
+
+    // Referti e fattura si caricano in parallelo: "Avanti" resta disabilitato finché non sono finiti tutti.
+    private int _uploads;
+
+    private bool Uploading => _uploads > 0;
 
     [Parameter, EditorRequired]
     public DispatchDraft Draft { get; set; } = default!;
@@ -112,7 +116,7 @@
 
     private static readonly string Accept = string.Join(",", UploadLimits.AllowedExtensions);
 
-    private bool CanContinue => !_uploading && Draft.AcceptedReports.Any();
+    private bool CanContinue => !Uploading && Draft.AcceptedReports.Any();
 
     private bool ShowLastNameWarning =>
         Draft.AcceptedReports.Any()
@@ -133,7 +137,7 @@
 
     private async Task OnReportsChosenAsync(InputFileChangeEventArgs e)
     {
-        _uploading = true;
+        _uploads++;
         try
         {
             // Caricarne altri aggiunge all'elenco, non lo sostituisce. Si leggono tutti quelli scelti (GetMultipleFiles
@@ -150,7 +154,7 @@
         }
         finally
         {
-            _uploading = false;
+            _uploads--;
         }
     }
 
@@ -181,6 +185,10 @@
         {
             await using var stream = browserFile.OpenReadStream(UploadLimits.MaxFileBytes, _cts.Token);
             stored = await TempFiles.SaveAsync(Draft.DraftId, name, stream, _cts.Token);
+        }
+        catch (TimeoutException)
+        {
+            return Rejected(Messaggi.CaricamentoInterrotto);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -240,7 +248,7 @@
             return;
         }
 
-        _uploading = true;
+        _uploads++;
         try
         {
             await using var stream = browserFile.OpenReadStream(UploadLimits.MaxFileBytes, _cts.Token);
@@ -250,6 +258,10 @@
         catch (OperationCanceledException)
         {
         }
+        catch (TimeoutException)
+        {
+            Draft.Invoice = Rejected(Messaggi.CaricamentoInterrotto);
+        }
         catch (Exception ex)
         {
             Logger.LogWarning(ex, "Caricamento della fattura non riuscito per l'invio {DispatchId}", Draft.DraftId);
@@ -257,7 +269,7 @@
         }
         finally
         {
-            _uploading = false;
+            _uploads--;
         }
     }
 

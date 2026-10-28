@@ -82,6 +82,23 @@ public sealed class StoricoPageTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Slow_queries_do_not_overlap_on_the_same_database_context()
+    {
+        // Come al primo avvio su SQL Server: la griglia parte mentre l'elenco operatori è ancora in lettura,
+        // e un cambio di filtro arriva mentre la pagina precedente è in caricamento.
+        _env.QueryDelay.Delay = TimeSpan.FromMilliseconds(100);
+        Setup(_admin);
+
+        var cut = _ctx.Render<Storico>();
+        await cut.InvokeAsync(() => cut.FindComponent<MudDataGrid<DispatchListItem>>().Instance.ReloadServerData());
+
+        cut.WaitForAssertion(() => Assert.Contains("Rossi Mario", cut.Markup), TimeSpan.FromSeconds(10));
+        var unhandled = _ctx.Renderer.UnhandledException;
+        Assert.False(unhandled.IsCompleted, unhandled.IsCompleted ? (await unhandled).ToString() : null);
+        Assert.Empty(cut.FindAll(".mud-alert-filled-error, .mud-alert-text-error"));
+    }
+
+    [Fact]
     public void An_admin_sees_technical_support_instead_of_the_super_admin_name()
     {
         Setup(_admin);

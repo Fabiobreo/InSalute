@@ -15,6 +15,7 @@ public sealed record StoredFile(string StoredName, string OriginalFileName, long
 public sealed partial class TempFileStore(IOptions<StorageOptions> options, ILogger<TempFileStore> logger)
 {
     private readonly string _root = Path.GetFullPath(options.Value.TempPath);
+    private readonly TimeSpan _uploadIdleTimeout = options.Value.UploadIdleTimeout;
 
     [GeneratedRegex(@"^[0-9a-f]{32}(\.[a-z0-9]{1,10})?$")]
     private static partial Regex StoredNamePattern();
@@ -44,7 +45,7 @@ public sealed partial class TempFileStore(IOptions<StorageOptions> options, ILog
             await using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
             var buffer = new byte[81920];
             int read;
-            while ((read = await content.ReadAsync(buffer, ct)) > 0)
+            while ((read = await ReadWithIdleTimeoutAsync(content, buffer, ct)) > 0)
             {
                 hash.TransformBlock(buffer, 0, read, null, 0);
                 await file.WriteAsync(buffer.AsMemory(0, read), ct);
@@ -59,6 +60,24 @@ public sealed partial class TempFileStore(IOptions<StorageOptions> options, ILog
         }
 
         return new StoredFile(storedName, originalFileName, size, Convert.ToHexString(hash.Hash!).ToLowerInvariant());
+    }
+
+    /// <summary>
+    /// Una lettura che non riceve nulla entro <see cref="StorageOptions.UploadIdleTimeout"/> lancia <see cref="TimeoutException"/>.
+    /// Il WaitAsync smette di aspettare anche se lo stream ignora il token.
+    /// </summary>
+    private async Task<int> ReadWithIdleTimeoutAsync(Stream content, byte[] buffer, CancellationToken ct)
+    {
+        using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        idle.CancelAfter(_uploadIdleTimeout);
+        try
+        {
+            return await content.ReadAsync(buffer, idle.Token).AsTask().WaitAsync(idle.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Nessun dato ricevuto per {_uploadIdleTimeout.TotalSeconds:0} secondi.");
+        }
     }
 
     /// <summary>

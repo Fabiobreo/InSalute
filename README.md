@@ -34,8 +34,23 @@ Al primo avvio, se non esiste nessun utente, viene creato l'account `SuperAdmin`
 con `Bootstrap:SuperAdminUserName`): la sua password temporanea è scritta **una sola volta** nel log di avvio
 (console e `src/InSalute.Web/logs/`). Cercare «PRIMO AVVIO».
 
-Per provare gli invii serve un server SMTP finto, ad esempio [smtp4dev](https://github.com/rnwood/smtp4dev) o
-Papercut SMTP, da configurare in *Impostazioni → SMTP* (es. `localhost`, porta 25). Mai dati o email di pazienti reali.
+Per provare gli invii serve un server SMTP finto, ad esempio [smtp4dev](https://github.com/rnwood/smtp4dev). Mai dati o
+email di pazienti reali.
+
+L'applicazione invia **solo su connessione cifrata** (SSL/TLS o STARTTLS: non esiste l'opzione "nessuna") e controlla il
+certificato del server. Il server finto deve quindi offrire STARTTLS con un certificato valido per `localhost`: il
+certificato di sviluppo HTTPS di .NET va bene, perché `dotnet dev-certs https --trust` lo rende già attendibile.
+
+Da una cartella fuori dal repository (il comando crea lì `smtp-dev.crt` e `smtp-dev.key`, da non condividere):
+
+```bash
+dotnet dev-certs https -ep smtp-dev.crt --format PEM --no-password
+dotnet tool install -g Rnwood.Smtp4dev
+smtp4dev --smtpport=2525 --tlsmode=StartTls --tlscertificate=smtp-dev.crt --tlscertificateprivatekey=smtp-dev.key
+```
+
+In *Impostazioni → SMTP*: server `localhost`, porta `2525`, sicurezza *STARTTLS*, nome utente vuoto, un mittente
+qualsiasi. Le email arrivano nell'interfaccia di smtp4dev (http://localhost:5000).
 
 ## Test
 

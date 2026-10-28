@@ -1,6 +1,7 @@
 @using InSalute.Web.Components.Shared
 @using InSalute.Core.Dispatching
 @using InSalute.Core.Security
+@using InSalute.Core.Users
 @using InSalute.Web.Services
 @attribute [Authorize(Policy = Policies.CanSend)]
 @page "/storico"
@@ -73,6 +74,9 @@
     [Inject]
     private NavigationManager Navigation { get; set; } = default!;
 
+    // Il DbContext è uno per circuito e non regge due query insieme: la griglia parte mentre gli operatori sono
+    // ancora in caricamento, e un cambio di filtro può arrivare mentre la pagina precedente è in lettura.
+    private readonly SemaphoreSlim _dbGate = new(1, 1);
     private MudDataGrid<DispatchListItem>? _grid;
     private IReadOnlyList<OperatorOption> _operators = [];
     private string? _error;
@@ -90,8 +94,16 @@
         _from = today.AddDays(-30).ToDateTime(TimeOnly.MinValue);
         _to = today.ToDateTime(TimeOnly.MinValue);
 
-        var operators = await History.GetOperatorsAsync();
-        _operators = operators.Succeeded ? operators.Value! : [];
+        await _dbGate.WaitAsync();
+        try
+        {
+            var operators = await History.GetOperatorsAsync();
+            _operators = operators.Succeeded ? operators.Value! : [];
+        }
+        finally
+        {
+            _dbGate.Release();
+        }
     }
 
     private async Task FilterChangedAsync(Action apply)
@@ -112,7 +124,16 @@
             _status,
             _operatorId);
 
-        var result = await History.QueryAsync(filter, state.Page, state.PageSize > 0 ? state.PageSize : PageSize, ct);
+        await _dbGate.WaitAsync();
+        OperationResult<DispatchPage> result;
+        try
+        {
+            result = await History.QueryAsync(filter, state.Page, state.PageSize > 0 ? state.PageSize : PageSize, ct);
+        }
+        finally
+        {
+            _dbGate.Release();
+        }
         _error = result.Succeeded ? null : result.Error;
         return new GridData<DispatchListItem>
         {

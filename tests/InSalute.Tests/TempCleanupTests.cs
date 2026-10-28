@@ -18,6 +18,43 @@ public class TempFileStoreTests : IAsyncLifetime
     public async Task DisposeAsync() => await _env.DisposeAsync();
 
     [Fact]
+    public async Task An_upload_that_stops_sending_data_times_out_and_leaves_no_file()
+    {
+        _env.Storage.UploadIdleTimeout = TimeSpan.FromMilliseconds(200);
+        var store = _env.CreateScope().ServiceProvider.GetRequiredService<TempFileStore>();
+        var draft = Guid.NewGuid();
+
+        // Lo stream non risponde e ignora anche la cancellazione, come una connessione col browser caduta.
+        await using var stream = new StalledStream([1, 2, 3]);
+        await Assert.ThrowsAsync<TimeoutException>(() => store.SaveAsync(draft, "referto.pdf", stream));
+
+        Assert.Empty(Directory.EnumerateFiles(store.GetDraftFolder(draft)));
+    }
+
+    [Fact]
+    public async Task A_slow_upload_that_keeps_sending_data_is_not_cut_off()
+    {
+        _env.Storage.UploadIdleTimeout = TimeSpan.FromMilliseconds(200);
+        var store = _env.CreateScope().ServiceProvider.GetRequiredService<TempFileStore>();
+
+        // In tutto ci mette più del tempo massimo, ma ogni blocco arriva prima.
+        await using var stream = new TricklingStream(chunks: 8, delay: TimeSpan.FromMilliseconds(60));
+        var stored = await store.SaveAsync(Guid.NewGuid(), "referto.txt", stream);
+
+        Assert.Equal(8, stored.SizeBytes);
+    }
+
+    [Fact]
+    public async Task Cancelling_an_upload_is_not_reported_as_a_timeout()
+    {
+        var store = _env.CreateScope().ServiceProvider.GetRequiredService<TempFileStore>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        await using var stream = new StalledStream([]);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => store.SaveAsync(Guid.NewGuid(), "referto.pdf", stream, cts.Token));
+    }
+
+    [Fact]
     public async Task Saved_file_has_a_guid_name_and_sha256_and_keeps_the_original_name_in_memory_only()
     {
         var store = _env.CreateScope().ServiceProvider.GetRequiredService<TempFileStore>();
