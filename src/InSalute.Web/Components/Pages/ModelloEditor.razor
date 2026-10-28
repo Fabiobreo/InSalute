@@ -1,40 +1,50 @@
 @using InSalute.Core.Domain
 @using InSalute.Core.Settings
+@using InSalute.Web.Components.Shared
 @inject EmailTemplateService Templates
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 
 <MudGrid>
     <MudItem xs="12" md="6">
-        <MudTextField @bind-Value="State.Subject" Label="Oggetto" Immediate="true" MaxLength="200" Class="mb-2" />
-        <MudTextField @bind-Value="State.Body" Label="Corpo" Lines="9" Immediate="true"
+        <MudTextField T="string" Value="State.Subject" ValueChanged="OnSubjectChanged" Label="Oggetto" Immediate="true" MaxLength="200"
+                      Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField T="string" Value="State.Body" ValueChanged="OnBodyChanged" Label="Corpo" Lines="9" Immediate="true"
+                      Variant="Variant.Outlined"
                       UserAttributes="@(new Dictionary<string, object> { ["id"] = BodyId })" />
 
         <MudText Typo="Typo.subtitle2" Class="mt-4 mb-1">Segnaposto disponibili</MudText>
         <div class="d-flex flex-wrap gap-2">
             @foreach (var placeholder in EmailTemplateService.PlaceholdersFor(State.Kind))
             {
-                <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => InsertAsync(placeholder))"
-                           aria-label="@($"Inserisci {placeholder}")">Inserisci @placeholder</MudButton>
+                <MudChip T="string" Icon="@Icons.Material.Filled.Add" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                         OnClick="@(() => InsertAsync(placeholder))" aria-label="@($"Inserisci {placeholder}")" Class="ma-0">@placeholder</MudChip>
             }
         </div>
 
-        @if (State.Error is not null)
+        @* Gli errori del modello si vedono mentre si scrive, non solo al salvataggio. *@
+        @if (LiveError is { } liveError)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-4">@liveError</MudAlert>
+        }
+        else if (State.Error is not null)
         {
             <MudAlert Severity="Severity.Error" Class="mt-4">@State.Error</MudAlert>
         }
 
-        <div class="mt-4">
+        <div class="d-flex flex-wrap align-center gap-3 mt-4">
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="State.Saving">Salva modello</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="RestoreDefaultAsync" Disabled="IsDefault">Ripristina testo predefinito</MudButton>
+            @if (State.IsDirty)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Warning">Modifiche non salvate</MudText>
+            }
         </div>
     </MudItem>
 
     <MudItem xs="12" md="6">
         <MudText Typo="Typo.subtitle2" Class="mb-1">Anteprima</MudText>
-        <MudPaper Outlined="true" Class="pa-4">
-            <MudText Typo="Typo.body2" Class="mb-2">Oggetto: <strong>@Preview.Subject</strong></MudText>
-            <MudText Style="white-space: pre-wrap;">@Preview.Body</MudText>
-        </MudPaper>
+        <EmailAnteprima Subject="@Preview.Subject" Body="@Preview.Body" />
         <MudText Typo="Typo.caption" Class="mt-1">
             Dati di esempio: @EmailTemplateService.SampleFirstName @EmailTemplateService.SampleLastName@(State.Kind == EmailTemplateKind.Password ? $", password {EmailTemplateService.SamplePassword}" : "").
         </MudText>
@@ -50,9 +60,22 @@
 
         public string Body { get; set; } = "";
 
+        /// <summary>Testi com'erano all'ultimo caricamento o salvataggio.</summary>
+        public string SavedSubject { get; set; } = "";
+
+        public string SavedBody { get; set; } = "";
+
+        public bool IsDirty => Subject != SavedSubject || Body != SavedBody;
+
         public string? Error { get; set; }
 
         public bool Saving { get; set; }
+
+        public void MarkSaved()
+        {
+            SavedSubject = Subject;
+            SavedBody = Body;
+        }
     }
 
     [Parameter, EditorRequired]
@@ -61,9 +84,29 @@
     [Parameter, EditorRequired]
     public string IdPrefix { get; set; } = "";
 
+    /// <summary>Il testo è cambiato o è stato salvato (serve al genitore per l'indicatore sulla scheda).</summary>
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
     private string BodyId => $"modello-{IdPrefix}-corpo";
 
     private (string Subject, string Body) Preview => EmailTemplateService.Preview(State.Subject, State.Body);
+
+    private string? LiveError => EmailTemplateService.Validate(State.Kind, State.Subject, State.Body);
+
+    private bool IsDefault => (State.Subject, State.Body) == EmailTemplateDefaults.For(State.Kind);
+
+    private Task OnSubjectChanged(string value)
+    {
+        State.Subject = value;
+        return OnChanged.InvokeAsync();
+    }
+
+    private Task OnBodyChanged(string value)
+    {
+        State.Body = value;
+        return OnChanged.InvokeAsync();
+    }
 
     private async Task InsertAsync(string placeholder)
     {
@@ -73,8 +116,16 @@
         }
         catch (JSException)
         {
-            State.Body += placeholder;
+            await OnBodyChanged(State.Body + placeholder);
         }
+    }
+
+    /// <summary>Rimette i testi predefiniti nel form: diventano effettivi solo con "Salva modello".</summary>
+    private Task RestoreDefaultAsync()
+    {
+        (State.Subject, State.Body) = EmailTemplateDefaults.For(State.Kind);
+        State.Error = null;
+        return OnChanged.InvokeAsync();
     }
 
     private async Task SaveAsync()
@@ -86,11 +137,16 @@
 
         if (result.Succeeded)
         {
+            // Il servizio salva i testi senza spazi iniziali e finali.
+            State.Subject = State.Subject.Trim();
+            State.Body = State.Body.Trim();
+            State.MarkSaved();
             Snackbar.Add("Modello salvato.", Severity.Success);
         }
         else
         {
             State.Error = result.Error;
         }
+        await OnChanged.InvokeAsync();
     }
 }

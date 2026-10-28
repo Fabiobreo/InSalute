@@ -31,7 +31,26 @@ public class LayoutTests
             Assert.Contains(label, cut.Markup);
         }
         Assert.Contains("contenuto", cut.Markup);
-        Assert.Contains($"© {DateTime.Now.Year}", cut.Markup);
+        var footer = cut.Find("footer");
+        Assert.Contains($"© {DateTime.Now.Year} InSalute", footer.TextContent);
+        Assert.Contains("P.IVA 04333100248", footer.TextContent);
+        Assert.Contains("Versione", footer.TextContent);
+    }
+
+    [Fact]
+    public async Task User_menu_opens_with_profile_and_logout()
+    {
+        await using var ctx = new BunitContext();
+        var cut = RenderLayout(ctx, Policies.CanSend);
+
+        Assert.DoesNotContain("Esci", cut.Markup);
+        cut.Find("button.user-menu").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Profilo", cut.Markup);
+            Assert.Contains("Esci", cut.Markup);
+        });
     }
 
     [Fact]

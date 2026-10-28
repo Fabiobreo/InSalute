@@ -289,7 +289,7 @@ public class DispatchServiceTests : IAsyncLifetime
         Assert.Equal(2, _env.EmailSender.Sent.Count);
 
         var first = _env.EmailSender.Sent[0];
-        Assert.Equal("Referto", first.Subject);
+        Assert.Equal(EmailTemplateDefaults.ReportSubject, first.Subject);
         Assert.Contains("Buongiorno Mario Rossi,", first.Body);
         Assert.DoesNotContain(prepared.Password, first.Body);
         Assert.Equal("mario.rossi@example.test", first.ToAddress);
@@ -297,7 +297,7 @@ public class DispatchServiceTests : IAsyncLifetime
         Assert.Equal(2, TestFiles.PageCount(_env.EmailSender.SentAttachments[0].Single().Content, prepared.Password));
 
         var second = _env.EmailSender.Sent[1];
-        Assert.Equal("Credenziali", second.Subject);
+        Assert.Equal(EmailTemplateDefaults.PasswordSubject, second.Subject);
         Assert.Contains(prepared.Password, second.Body);
         Assert.Null(second.Attachments);
 
@@ -364,7 +364,7 @@ public class DispatchServiceTests : IAsyncLifetime
         var password = await SendPasswordAsync(prepared);
 
         Assert.True(report.Succeeded && password.Succeeded);
-        Assert.Equal(["Referto", "Credenziali"], _env.EmailSender.Sent.Select(m => m.Subject));
+        Assert.Equal([EmailTemplateDefaults.ReportSubject, EmailTemplateDefaults.PasswordSubject], _env.EmailSender.Sent.Select(m => m.Subject));
         var dispatch = await StoredAsync(prepared.DispatchId);
         Assert.Null(dispatch.ReportError);
         Assert.Equal(DispatchStepStatus.Sent, dispatch.ReportStatus);
@@ -384,7 +384,7 @@ public class DispatchServiceTests : IAsyncLifetime
         var retry = await SendPasswordAsync(prepared);
 
         Assert.True(retry.Succeeded);
-        Assert.Equal(["Referto", "Credenziali"], _env.EmailSender.Sent.Select(m => m.Subject));
+        Assert.Equal([EmailTemplateDefaults.ReportSubject, EmailTemplateDefaults.PasswordSubject], _env.EmailSender.Sent.Select(m => m.Subject));
         // La password nella seconda email è quella che apre l'allegato già partito.
         Assert.Contains(prepared.Password, _env.EmailSender.Sent[1].Body);
         Assert.Equal(2, TestFiles.PageCount(_env.EmailSender.SentAttachments[0].Single().Content, prepared.Password));

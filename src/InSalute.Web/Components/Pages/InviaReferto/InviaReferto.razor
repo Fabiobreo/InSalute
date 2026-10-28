@@ -33,14 +33,29 @@
         </MudAlert>
     }
 
+    @* Solo indicatore, non navigazione: i passi completati hanno la spunta, quello attuale è evidenziato. *@
     <nav aria-label="Passi della procedura">
         <ol class="wizard-steps">
             @for (var i = 0; i < StepNames.Length; i++)
             {
                 var number = i + 1;
-                <li aria-current="@(number == _step ? "step" : null)">
-                    <span class="wizard-step-number">@number</span>
+                var done = number < _step || (number == _step && _draft.Finished);
+                <li aria-current="@(number == _step ? "step" : null)" class="@(done ? "is-done" : null)">
+                    <span class="wizard-step-number" aria-hidden="true">
+                        @if (done)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Style="font-size: 16px;" />
+                        }
+                        else
+                        {
+                            @number
+                        }
+                    </span>
                     <span>@StepNames[i]</span>
+                    @if (done)
+                    {
+                        <span class="visually-hidden">(completato)</span>
+                    }
                 </li>
             }
         </ol>

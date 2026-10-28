@@ -1,0 +1,20 @@
+@* Lo stesso aspetto per tutti gli stati (invii, utenti): sfondo tenue, puntino colorato e testo. Mai solo colore. *@
+<span class="stato-badge stato-badge--@Tone.ToString().ToLowerInvariant()">
+    <span class="stato-badge-dot" aria-hidden="true"></span>@ChildContent
+</span>
+
+@code {
+    public enum Tono
+    {
+        Successo,
+        Avviso,
+        Errore,
+        Neutro,
+    }
+
+    [Parameter]
+    public Tono Tone { get; set; } = Tono.Neutro;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

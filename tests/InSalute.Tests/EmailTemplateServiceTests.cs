@@ -68,6 +68,17 @@ public class EmailTemplateServiceTests : IAsyncLifetime
         Assert.False(result.Succeeded);
     }
 
+    [Theory]
+    [InlineData(EmailTemplateKind.Report)]
+    [InlineData(EmailTemplateKind.Password)]
+    public void Default_texts_are_valid_templates(EmailTemplateKind kind)
+    {
+        // "Ripristina testo predefinito" non deve mai proporre un modello che poi non si può salvare.
+        var (subject, body) = EmailTemplateDefaults.For(kind);
+
+        Assert.Null(EmailTemplateService.Validate(kind, subject, body));
+    }
+
     [Fact]
     public async Task Rejected_templates_do_not_change_the_stored_ones()
     {
@@ -76,7 +87,7 @@ public class EmailTemplateServiceTests : IAsyncLifetime
         using var scope = _env.CreateScope();
         var stored = await scope.ServiceProvider.GetRequiredService<AppDbContext>().EmailTemplates
             .SingleAsync(t => t.Kind == EmailTemplateKind.Password);
-        Assert.Equal("Credenziali", stored.Subject);
+        Assert.Equal(EmailTemplateDefaults.PasswordSubject, stored.Subject);
         Assert.Contains("{PASSWORD}", stored.Body);
     }
 

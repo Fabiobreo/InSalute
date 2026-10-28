@@ -1,17 +1,17 @@
 @using InSalute.Core.Dispatching
 
 @* Il testo dice lo stato; il colore lo conferma (mai solo colore). *@
-<MudChip T="string" Size="Size.Small" Color="ChipColor" Variant="Variant.Filled" Class="ma-0">@Status.Label()</MudChip>
+<StatoBadge Tone="Tone">@Status.Label()</StatoBadge>
 
 @code {
     [Parameter, EditorRequired]
     public DispatchOverallStatus Status { get; set; }
 
-    private Color ChipColor => Status switch
+    private StatoBadge.Tono Tone => Status switch
     {
-        DispatchOverallStatus.Completed => Color.Success,
-        DispatchOverallStatus.PasswordNotSent => Color.Warning,
-        DispatchOverallStatus.NotSent => Color.Error,
-        _ => Color.Default,
+        DispatchOverallStatus.Completed => StatoBadge.Tono.Successo,
+        DispatchOverallStatus.PasswordNotSent => StatoBadge.Tono.Avviso,
+        DispatchOverallStatus.NotSent => StatoBadge.Tono.Errore,
+        _ => StatoBadge.Tono.Neutro,
     };
 }

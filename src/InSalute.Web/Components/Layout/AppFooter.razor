@@ -1,0 +1,33 @@
+@using System.Reflection
+
+@* Sempre in fondo alla pagina e a tutta larghezza, come la barra in alto. Dati legali come sul sito, link utili e versione per l'assistenza. *@
+<footer class="app-footer">
+    <div class="app-footer-inner">
+        <div class="app-footer-brand">
+            <img src="img/logo.png" alt="" height="24" />
+            <div>
+                <div class="app-footer-name">Poliambulatorio InSalute</div>
+                <div class="app-footer-legal">© @DateTime.Now.Year InSalute · P.IVA 04333100248 · REA VI-396554</div>
+            </div>
+        </div>
+        <nav class="app-footer-links" aria-label="Link del poliambulatorio">
+            <a href="https://www.poliambulatorioinsalute.it/" target="_blank" rel="noopener">Sito web</a>
+            <a href="https://www.poliambulatorioinsalute.it/medicina-del-lavoro/informativa_privacy_sms/" target="_blank" rel="noopener">Privacy</a>
+            <a href="https://www.poliambulatorioinsalute.it/contatti/" target="_blank" rel="noopener">Contatti</a>
+            <span class="app-footer-version" title="Da comunicare all'assistenza in caso di problemi">Versione @Version</span>
+        </nav>
+    </div>
+</footer>
+
+@code {
+    /// <summary>"1.0.0 · f00c806": numero di versione e commit abbreviato, se presente.</summary>
+    private static readonly string Version = FormatVersion(
+        typeof(AppFooter).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "");
+
+    private static string FormatVersion(string informational)
+    {
+        var parts = informational.Split('+', 2);
+        var number = parts[0].Length > 0 ? parts[0] : "—";
+        return parts.Length == 2 && parts[1].Length >= 7 ? $"{number} · {parts[1][..7]}" : number;
+    }
+}

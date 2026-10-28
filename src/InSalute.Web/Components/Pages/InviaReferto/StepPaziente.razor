@@ -6,18 +6,32 @@
     <MudText Typo="Typo.h6" HtmlTag="h2">Paziente</MudText>
     <MudText Typo="Typo.body2">Tutti i campi sono obbligatori.</MudText>
 
-    <MudTextField @ref="_lastNameField" T="string" Value="Draft.LastName" ValueChanged="OnLastNameChanged" Immediate="true"
-                  Label="Cognome" MaxLength="100" autocomplete="off"
-                  Error="@(Touched(nameof(Draft.LastName)) && LastNameError is not null)" ErrorText="@LastNameError"
-                  OnBlur="@(() => Touch(nameof(Draft.LastName)))" />
-    <MudTextField T="string" Value="Draft.FirstName" ValueChanged="OnFirstNameChanged" Immediate="true"
-                  Label="Nome" MaxLength="100" autocomplete="off"
-                  Error="@(Touched(nameof(Draft.FirstName)) && FirstNameError is not null)" ErrorText="@FirstNameError"
-                  OnBlur="@(() => Touch(nameof(Draft.FirstName)))" />
-    <MudTextField T="string" Value="Draft.Email" ValueChanged="OnEmailChanged" Immediate="true"
-                  Label="Email" InputType="InputType.Email" autocomplete="off"
-                  Error="@(Touched(nameof(Draft.Email)) && EmailError is not null)" ErrorText="@EmailError"
-                  OnBlur="@(() => Touch(nameof(Draft.Email)))" />
+    <MudGrid Spacing="2">
+        <MudItem xs="12" sm="6">
+            <MudTextField @ref="_lastNameField" T="string" Value="Draft.LastName" ValueChanged="OnLastNameChanged" Immediate="true"
+                          Label="Cognome" MaxLength="100" autocomplete="off"
+                          Error="@(Touched(nameof(Draft.LastName)) && LastNameError is not null)" ErrorText="@LastNameError"
+                          OnBlur="@(() => Touch(nameof(Draft.LastName)))" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField T="string" Value="Draft.FirstName" ValueChanged="OnFirstNameChanged" Immediate="true"
+                          Label="Nome" MaxLength="100" autocomplete="off"
+                          Error="@(Touched(nameof(Draft.FirstName)) && FirstNameError is not null)" ErrorText="@FirstNameError"
+                          OnBlur="@(() => Touch(nameof(Draft.FirstName)))" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField T="string" Value="Draft.Email" ValueChanged="OnEmailChanged" Immediate="true"
+                          Label="Email" InputType="InputType.Email" autocomplete="off"
+                          Error="@(Touched(nameof(Draft.Email)) && EmailError is not null)" ErrorText="@EmailError"
+                          OnBlur="@(() => Touch(nameof(Draft.Email)))" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField T="string" Value="Draft.EmailConfirm" ValueChanged="OnEmailConfirmChanged" Immediate="true"
+                          Label="Conferma email" InputType="InputType.Email" autocomplete="off"
+                          Error="@(Touched(nameof(Draft.EmailConfirm)) && EmailConfirmError is not null)" ErrorText="@EmailConfirmError"
+                          OnBlur="@(() => Touch(nameof(Draft.EmailConfirm)))" />
+        </MudItem>
+    </MudGrid>
 
     @if (Suggestion is { } suggestion)
     {
@@ -35,19 +49,20 @@
         </MudAlert>
     }
 
-    <MudTextField T="string" Value="Draft.EmailConfirm" ValueChanged="OnEmailConfirmChanged" Immediate="true"
-                  Label="Conferma email" InputType="InputType.Email" autocomplete="off"
-                  Error="@(Touched(nameof(Draft.EmailConfirm)) && EmailConfirmError is not null)" ErrorText="@EmailConfirmError"
-                  OnBlur="@(() => Touch(nameof(Draft.EmailConfirm)))" />
-
-    <div class="d-flex justify-end mt-4">
-        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="!IsValid">Avanti</MudButton>
+    <div class="wizard-actions mt-4">
+        @if (!IsValid)
+        {
+            <MudText Typo="Typo.body2" Class="wizard-hint" id="paziente-hint">Compila tutti i campi per proseguire.</MudText>
+        }
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="!IsValid"
+                   aria-describedby="@(IsValid ? null : "paziente-hint")">Avanti</MudButton>
     </div>
 </form>
 
 @code {
     private MudTextField<string>? _lastNameField;
     private readonly HashSet<string> _touched = [];
+    private readonly HashSet<string> _edited = [];
     private bool _usedForAnotherPatient;
     private bool _checking;
     private bool _checkAgain;
@@ -95,23 +110,43 @@
         }
     }
 
-    private void Touch(string field) => _touched.Add(field);
+    /// <summary>
+    /// L'errore compare solo lasciando un campo già modificato: "Cognome" ha il focus all'apertura e un clic altrove
+    /// non deve bastare a farlo diventare rosso.
+    /// </summary>
+    private void Touch(string field)
+    {
+        if (_edited.Contains(field))
+        {
+            _touched.Add(field);
+        }
+    }
 
     private async Task OnLastNameChanged(string value)
     {
         Draft.LastName = value;
+        _edited.Add(nameof(Draft.LastName));
         await RefreshUsedForAnotherPatientAsync();
     }
 
-    private void OnFirstNameChanged(string value) => Draft.FirstName = value;
+    private void OnFirstNameChanged(string value)
+    {
+        Draft.FirstName = value;
+        _edited.Add(nameof(Draft.FirstName));
+    }
 
     private async Task OnEmailChanged(string value)
     {
         Draft.Email = value;
+        _edited.Add(nameof(Draft.Email));
         await RefreshUsedForAnotherPatientAsync();
     }
 
-    private void OnEmailConfirmChanged(string value) => Draft.EmailConfirm = value;
+    private void OnEmailConfirmChanged(string value)
+    {
+        Draft.EmailConfirm = value;
+        _edited.Add(nameof(Draft.EmailConfirm));
+    }
 
     private async Task ApplySuggestionAsync(DomainSuggestion suggestion)
     {

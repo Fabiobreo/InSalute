@@ -41,7 +41,9 @@
         @if (Draft.Finished && _report == StatoPassoEsito.Riuscito && _password == StatoPassoEsito.Riuscito)
         {
             <MudAlert Severity="Severity.Success">Referto e password inviati a @Draft.Email.Trim().</MudAlert>
-            <div class="d-flex justify-end">
+            <div class="wizard-actions wizard-actions--split">
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="@($"storico/{Draft.Prepared!.DispatchId}")"
+                           StartIcon="@Icons.Material.Filled.History">Vedi nello storico</MudButton>
                 <MudButton @ref="_primaryAction" Variant="Variant.Filled" Color="Color.Primary" OnClick="OnNewDispatch">Nuovo invio</MudButton>
             </div>
         }

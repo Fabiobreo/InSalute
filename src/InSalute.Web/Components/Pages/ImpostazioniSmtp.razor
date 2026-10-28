@@ -5,14 +5,18 @@
 @using InSalute.Core.Settings
 @using InSalute.Core.Texts
 @using InSalute.Core.Users
+@using InSalute.Web.Components.Shared
 @attribute [Authorize(Policy = Policies.CanManageSettings)]
 @inject SmtpSettingsService SmtpSettingsService
 @inject UserAdminService UserAdmin
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@implements IDisposable
 
 <PageTitle>Impostazioni SMTP · InSalute</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Impostazioni SMTP</MudText>
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Impostazioni SMTP</MudText>
 
 @if (_loading)
 {
@@ -41,11 +45,24 @@ else
                 <MudSelectItem T="SmtpSecurity" Value="SmtpSecurity.SslOnConnect">SSL/TLS diretto (di solito porta 465)</MudSelectItem>
                 <MudSelectItem T="SmtpSecurity" Value="SmtpSecurity.StartTls">STARTTLS (di solito porta 587)</MudSelectItem>
             </MudSelect>
+            @if (PortSecurityWarning is { } warning)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined">@warning</MudAlert>
+            }
             <MudTextField @bind-Value="_userName" Label="Nome utente" autocomplete="off"
                           HelperText="Lascia vuoto solo se il server non richiede autenticazione." />
             <MudTextField @bind-Value="_newPassword" Label="@PasswordLabel"
-                          InputType="InputType.Password" autocomplete="new-password"
-                          HelperText="@PasswordHelper" />
+                          InputType="@(_showPassword ? InputType.Text : InputType.Password)" autocomplete="new-password"
+                          HelperText="@PasswordHelper"
+                          Adornment="Adornment.End" AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                          AdornmentAriaLabel="@(_showPassword ? "Nascondi password" : "Mostra password")"
+                          OnAdornmentClick="() => _showPassword = !_showPassword" />
+            @if (IsGmail)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined">
+                    Con Gmail serve una «password per le app» (Account Google → Sicurezza → Verifica in due passaggi → Password per le app), non la password normale dell'account.
+                </MudAlert>
+            }
             <MudTextField @bind-Value="_fromAddress" Label="Indirizzo mittente" InputType="InputType.Email" Required="true"
                           RequiredError="Inserisci l'indirizzo del mittente." />
             <MudTextField @bind-Value="_fromName" Label="Nome mittente" MaxLength="100" />
@@ -63,20 +80,18 @@ else
 
     <MudPaper Class="pa-4" Style="max-width: 720px;">
         <MudText Typo="Typo.subtitle1" Class="mb-2">Email di prova</MudText>
-        <MudText Typo="Typo.body2" Class="mb-2">Invia un messaggio di prova con le impostazioni salvate.</MudText>
+        <MudText Typo="Typo.body2" Class="mb-2">
+            Invia un messaggio di prova per verificare che la posta funzioni. Se ci sono modifiche non salvate, vengono salvate prima della prova.
+        </MudText>
         <MudTextField @bind-Value="_testAddress" Label="Indirizzo di destinazione" InputType="InputType.Email" />
         <div class="mt-2">
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SendTestAsync" Disabled="_testing || !_configured">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SendTestAsync" Disabled="_testing || _saving">
                 @if (_testing)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
                 }
-                Invia email di prova
+                @(IsDirty || !_configured ? "Salva e invia email di prova" : "Invia email di prova")
             </MudButton>
-            @if (!_configured)
-            {
-                <MudText Typo="Typo.caption" Class="ml-2">Salva prima le impostazioni.</MudText>
-            }
         </div>
 
         @if (_testMessage is not null)
@@ -125,6 +140,24 @@ else
         : PasswordMustBeReentered ? "Hai cambiato server o nome utente: inserisci di nuovo la password."
         : "Password impostata ✓";
 
+    private bool _showPassword;
+    private string _savedSnapshot = "";
+    private IDisposable? _locationHandler;
+
+    /// <summary>Valori del form com'erano all'ultimo caricamento o salvataggio, per sapere se ci sono modifiche.</summary>
+    private string Snapshot() => string.Join("\u001f", _host, _port, _security, _userName, _newPassword, _fromAddress, _fromName);
+
+    private bool IsDirty => !_loading && _loadError is null && Snapshot() != _savedSnapshot;
+
+    private bool IsGmail => (_host ?? "").Contains("gmail", StringComparison.OrdinalIgnoreCase);
+
+    private string? PortSecurityWarning => (_port, _security) switch
+    {
+        (465, SmtpSecurity.StartTls) => "La porta 465 di solito usa «SSL/TLS diretto», non STARTTLS. Controlla i dati del fornitore.",
+        (587, SmtpSecurity.SslOnConnect) => "La porta 587 di solito usa STARTTLS, non «SSL/TLS diretto». Controlla i dati del fornitore.",
+        _ => null,
+    };
+
     private string _testAddress = "";
     private bool _testing;
     private bool _testSucceeded;
@@ -155,7 +188,38 @@ else
         var profile = await UserAdmin.GetProfileAsync();
         _testAddress = profile.Value?.Email ?? "";
         _loading = false;
+        _savedSnapshot = Snapshot();
     }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _locationHandler = Navigation.RegisterLocationChangingHandler(OnLocationChangingAsync);
+        }
+    }
+
+    private async ValueTask OnLocationChangingAsync(LocationChangingContext context)
+    {
+        if (!IsDirty)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<ConfermaDialog>
+        {
+            { x => x.Message, "Hai modificato le impostazioni senza salvarle. Se esci le modifiche andranno perse." },
+            { x => x.ConfirmText, "Esci senza salvare" },
+            { x => x.CancelText, "Resta qui" },
+        };
+        var dialog = await DialogService.ShowAsync<ConfermaDialog>("Modifiche non salvate", parameters);
+        if (await dialog.Result is not { Canceled: false })
+        {
+            context.PreventNavigation();
+        }
+    }
+
+    public void Dispose() => _locationHandler?.Dispose();
 
     private static string? ValidatePort(int port) => port is < 1 or > 65535 ? Messaggi.PortaNonValida : null;
 
@@ -166,13 +230,16 @@ else
         _security = security;
     }
 
-    private async Task SaveAsync()
+    private Task SaveAsync() => TrySaveAsync();
+
+    /// <summary>Salva il form. Falso se i dati non sono validi o il salvataggio non riesce (l'errore è già mostrato).</summary>
+    private async Task<bool> TrySaveAsync()
     {
         _saveError = null;
         await _form.ValidateAsync();
         if (!_form.IsValid)
         {
-            return;
+            return false;
         }
 
         _saving = true;
@@ -191,16 +258,23 @@ else
             _newPassword = null;
             _savedHost = _host;
             _savedUserName = _userName;
+            _savedSnapshot = Snapshot();
             Snackbar.Add("Impostazioni salvate.", Severity.Success);
+            return true;
         }
-        else
-        {
-            _saveError = result.Error;
-        }
+
+        _saveError = result.Error;
+        return false;
     }
 
     private async Task SendTestAsync()
     {
+        // La prova usa le impostazioni salvate: chi ha appena modificato il form si aspetta di provare quelle.
+        if ((IsDirty || !_configured) && !await TrySaveAsync())
+        {
+            return;
+        }
+
         _testing = true;
         _testMessage = null;
         _testDetails = null;

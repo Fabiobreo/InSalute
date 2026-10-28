@@ -15,21 +15,42 @@
 <PageTitle>Accedi · InSalute</PageTitle>
 
 <h1>Accedi</h1>
+<p class="account-subtitle">Usa le credenziali che ti ha fornito l'amministratore.</p>
 
 <StatusMessage Message="@errorMessage" />
-<EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
+<EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login" data-busy-text="Accesso in corso…">
     <DataAnnotationsValidator />
     <label for="Input.UserName">Nome utente o email</label>
-    <InputText @bind-Value="Input.UserName" id="Input.UserName" autocomplete="username" aria-required="true" />
+    @* Con il nome già ricordato il cursore parte dalla password. *@
+    <InputText @bind-Value="Input.UserName" id="Input.UserName" autocomplete="username" aria-required="true"
+               autocapitalize="none" spellcheck="false" autofocus="@(rememberedUserName ? null : "autofocus")" />
     <ValidationMessage For="() => Input.UserName" />
     <label for="Input.Password">Password</label>
-    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" autocomplete="current-password" aria-required="true" />
+    <div class="password-field">
+        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" autocomplete="current-password" aria-required="true"
+                   autofocus="@(rememberedUserName ? "autofocus" : null)" />
+        <PasswordToggle For="Input.Password" />
+    </div>
     <ValidationMessage For="() => Input.Password" />
+    <label class="checkbox">
+        <InputCheckbox @bind-Value="Input.RememberUserName" />
+        <span>Ricorda il mio nome utente su questo computer</span>
+    </label>
     <button type="submit">Accedi</button>
 </EditForm>
+<p class="account-help">
+    Password dimenticata? Chiedi a un amministratore di reimpostarla dalla pagina Utenti.
+</p>
 
 @code {
+    /// <summary>
+    /// Solo il nome utente, mai la password: per quella c'è il gestore password del browser (i campi hanno
+    /// l'autocomplete giusto). La sessione resta di 30 minuti e non sopravvive alla chiusura del browser.
+    /// </summary>
+    private const string RememberCookieName = "InSalute.NomeUtente";
+
     private string? errorMessage;
+    private bool rememberedUserName;
     private EditContext editContext = default!;
 
     [CascadingParameter]
@@ -50,6 +71,13 @@
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+            if (HttpContext.Request.Cookies[RememberCookieName] is { Length: > 0 } remembered)
+            {
+                Input.UserName = remembered;
+                Input.RememberUserName = true;
+                rememberedUserName = true;
+            }
         }
     }
 
@@ -85,7 +113,27 @@
         else
         {
             await SignInManager.SignInAsync(user, isPersistent: false);
+            RememberUserName(login);
             RedirectManager.RedirectTo(ReturnUrl);
+        }
+    }
+
+    private void RememberUserName(string login)
+    {
+        if (Input.RememberUserName)
+        {
+            HttpContext.Response.Cookies.Append(RememberCookieName, login, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                IsEssential = true,
+                MaxAge = TimeSpan.FromDays(180),
+            });
+        }
+        else
+        {
+            HttpContext.Response.Cookies.Delete(RememberCookieName);
         }
     }
 
@@ -97,5 +145,7 @@
         [Required(ErrorMessage = "Inserisci la password.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
+
+        public bool RememberUserName { get; set; }
     }
 }

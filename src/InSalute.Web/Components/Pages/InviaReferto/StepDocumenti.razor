@@ -31,6 +31,7 @@
         <ul class="mud-list-padding pa-0 mt-3" style="list-style:none;">
             @foreach (var file in Draft.Reports)
             {
+                var acceptedIndex = AcceptedIndex(file);
                 <li class="mb-2">
                     <MudPaper Outlined="true" Class="pa-3 d-flex align-center gap-3">
                         <MudIcon Icon="@IconFor(file.Name)" Color="@(file.IsAccepted ? Color.Primary : Color.Error)" aria-hidden="true" />
@@ -45,12 +46,24 @@
                                 <MudText Typo="Typo.body2" Color="Color.Error">@file.Error</MudText>
                             }
                         </div>
+                        @* L'ordine dell'elenco è l'ordine delle pagine nel PDF unito. *@
+                        @if (file.IsAccepted && AcceptedCount > 1)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" Disabled="@(acceptedIndex == 0)"
+                                           title="Sposta su" aria-label="@($"Sposta su {file.Name}")" OnClick="() => Move(file, -1)" />
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small" Disabled="@(acceptedIndex == AcceptedCount - 1)"
+                                           title="Sposta giù" aria-label="@($"Sposta giù {file.Name}")" OnClick="() => Move(file, 1)" />
+                        }
                         <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" title="@($"Rimuovi {file.Name}")"
                                        aria-label="@($"Rimuovi {file.Name}")" OnClick="() => RemoveReport(file)" />
                     </MudPaper>
                 </li>
             }
         </ul>
+        @if (AcceptedCount > 1)
+        {
+            <MudText Typo="Typo.body2" Class="mb-2">I documenti saranno uniti nell'ordine dell'elenco: usa le frecce per cambiarlo.</MudText>
+        }
 
         @if (ShowLastNameWarning)
         {
@@ -64,7 +77,8 @@
         <MudText Typo="Typo.subtitle1" id="titolo-fattura" Class="mb-2">Fattura (facoltativa)</MudText>
         @if (Draft.Invoice is null || !Draft.Invoice.IsAccepted)
         {
-            <div class="drop-zone">
+            <div class="drop-zone drop-zone--secondary">
+                <MudIcon Icon="@Icons.Material.Outlined.ReceiptLong" aria-hidden="true" />
                 <MudText Typo="Typo.body1">Trascina qui la fattura (un solo file PDF) oppure sceglila dal computer</MudText>
                 <InputFile OnChange="OnInvoiceChosenAsync" accept=".pdf" aria-label="Scegli la fattura da caricare" />
             </div>
@@ -88,12 +102,21 @@
                                aria-label="@($"Rimuovi {invoice.Name}")" OnClick="RemoveInvoice" />
             </MudPaper>
         }
-        <MudText Typo="Typo.body2" Class="mt-2">La fattura sarà allegata senza password.</MudText>
+        <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Text" Class="mt-2">
+            La fattura sarà allegata senza password, come file separato dal referto.
+        </MudAlert>
     </section>
 
-    <div class="d-flex justify-space-between mt-2">
+    <div class="wizard-actions wizard-actions--split mt-2">
         <MudButton Variant="Variant.Outlined" OnClick="OnBack">Indietro</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!CanContinue)" OnClick="OnNext">Avanti</MudButton>
+        <div class="wizard-actions">
+            @if (ContinueHint is { } hint)
+            {
+                <MudText Typo="Typo.body2" Class="wizard-hint" id="documenti-hint">@hint</MudText>
+            }
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!CanContinue)" OnClick="OnNext"
+                       aria-describedby="@(CanContinue ? null : "documenti-hint")">Avanti</MudButton>
+        </div>
     </div>
 </div>
 
@@ -117,6 +140,29 @@
     private static readonly string Accept = string.Join(",", UploadLimits.AllowedExtensions);
 
     private bool CanContinue => !Uploading && Draft.AcceptedReports.Any();
+
+    private string? ContinueHint => CanContinue ? null
+        : Uploading ? "Attendi la fine del caricamento."
+        : "Aggiungi almeno un referto per proseguire.";
+
+    private int AcceptedCount => Draft.AcceptedReports.Count();
+
+    private int AcceptedIndex(DraftFile file) => Draft.AcceptedReports.ToList().IndexOf(file);
+
+    /// <summary>Scambia il referto con il precedente o il successivo tra quelli accettati (i rifiutati restano dove sono).</summary>
+    private void Move(DraftFile file, int direction)
+    {
+        var accepted = Draft.AcceptedReports.ToList();
+        var target = accepted.IndexOf(file) + direction;
+        if (target < 0 || target >= accepted.Count)
+        {
+            return;
+        }
+
+        var i = Draft.Reports.IndexOf(file);
+        var j = Draft.Reports.IndexOf(accepted[target]);
+        (Draft.Reports[i], Draft.Reports[j]) = (Draft.Reports[j], Draft.Reports[i]);
+    }
 
     private bool ShowLastNameWarning =>
         Draft.AcceptedReports.Any()

@@ -1,6 +1,7 @@
 @using InSalute.Core.Dispatching
 @using InSalute.Core.Domain
 @using InSalute.Web.Services
+@using InSalute.Web.Components.Shared
 @inject DispatchService Dispatcher
 
 <div class="d-flex flex-column gap-4">
@@ -18,17 +19,19 @@
     {
         <section aria-labelledby="titolo-destinatario">
             <MudText Typo="Typo.body2" id="titolo-destinatario">Destinatario</MudText>
-            <MudText Typo="Typo.h5">@Draft.FirstName.Trim() @Draft.LastName.Trim(), @Draft.Email.Trim()</MudText>
+            <MudText Typo="Typo.h5">@Draft.FirstName.Trim() @Draft.LastName.Trim()</MudText>
+            @* Il dominio in evidenza: è dove si nascondono gli errori di battitura più costosi. *@
+            <MudText Typo="Typo.h6" Class="destinatario-email">@EmailLocalPart<strong>@EmailDomain</strong></MudText>
         </section>
 
         <section aria-labelledby="titolo-documenti">
             <MudText Typo="Typo.subtitle1" id="titolo-documenti">Documenti</MudText>
-            <ul>
+            <ol class="riepilogo-documenti">
                 @foreach (var report in Draft.AcceptedReports)
                 {
                     <li>@report.Name</li>
                 }
-            </ul>
+            </ol>
             <MudText Typo="Typo.body2">Il paziente riceverà il file <strong>@preview.ProtectedFileName</strong>.</MudText>
             @if (Draft.Invoice is { IsAccepted: true } invoice)
             {
@@ -43,24 +46,25 @@
 
         <section aria-labelledby="titolo-email">
             <MudText Typo="Typo.subtitle1" id="titolo-email" Class="mb-2">Le due email che riceverà il paziente</MudText>
-            <MudPaper Outlined="true" Class="pa-3 mb-3">
-                <MudText Typo="Typo.caption">1. Email con il referto</MudText>
-                <MudText Typo="Typo.subtitle2">@preview.ReportSubject</MudText>
-                <pre class="email-preview">@preview.ReportBody</pre>
-            </MudPaper>
-            <MudPaper Outlined="true" Class="pa-3">
-                <MudText Typo="Typo.caption">2. Email con la password (inviata solo dopo la prima)</MudText>
-                <MudText Typo="Typo.subtitle2">@preview.PasswordSubject</MudText>
-                <pre class="email-preview">@preview.PasswordBody</pre>
-            </MudPaper>
+            <div class="d-flex flex-column gap-3">
+                <EmailAnteprima Caption="1. Email con il referto" Subject="@preview.ReportSubject" Body="@preview.ReportBody" />
+                <EmailAnteprima Caption="2. Email con la password (inviata solo dopo la prima)" Subject="@preview.PasswordSubject" Body="@preview.PasswordBody" />
+            </div>
         </section>
 
         <MudCheckBox T="bool" @bind-Value="_confirmed" Label="Ho verificato che destinatario e documenti sono corretti." />
     }
 
-    <div class="d-flex justify-space-between mt-2">
+    <div class="wizard-actions wizard-actions--split mt-2">
         <MudButton Variant="Variant.Outlined" OnClick="OnBack" Disabled="_sending">Indietro</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!CanSend)" OnClick="SendAsync">Invia referto</MudButton>
+        <div class="wizard-actions">
+            @if (SendHint is { } hint)
+            {
+                <MudText Typo="Typo.body2" Class="wizard-hint" id="riepilogo-hint">@hint</MudText>
+            }
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!CanSend)" OnClick="SendAsync"
+                       aria-describedby="@(SendHint is null ? null : "riepilogo-hint")">Invia referto</MudButton>
+        </div>
     </div>
 </div>
 
@@ -85,6 +89,17 @@
     public EventCallback OnSend { get; set; }
 
     private bool CanSend => _preview is not null && _confirmed && SendEnabled && !_sending;
+
+    private string? SendHint => _preview is null || _sending ? null
+        : !SendEnabled ? "La posta (SMTP) non è configurata."
+        : !_confirmed ? "Spunta la conferma per inviare."
+        : null;
+
+    private int EmailAt => Draft.Email.Trim().LastIndexOf('@');
+
+    private string EmailLocalPart => EmailAt > 0 ? Draft.Email.Trim()[..EmailAt] : Draft.Email.Trim();
+
+    private string EmailDomain => EmailAt > 0 ? Draft.Email.Trim()[EmailAt..] : "";
 
     protected override async Task OnInitializedAsync()
     {

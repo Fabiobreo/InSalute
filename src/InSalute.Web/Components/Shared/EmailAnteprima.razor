@@ -1,0 +1,21 @@
+@* Anteprima di un'email, uguale nel riepilogo dell'invio e nei modelli. *@
+<MudPaper Outlined="true" Class="pa-4 email-anteprima">
+    @if (Caption is not null)
+    {
+        <MudText Typo="Typo.overline" Class="d-block mb-1">@Caption</MudText>
+    }
+    <MudText Typo="Typo.body2" Class="mb-2">Oggetto: <strong>@Subject</strong></MudText>
+    <pre class="email-preview">@Body</pre>
+</MudPaper>
+
+@code {
+    /// <summary>Per esempio "1. Email con il referto".</summary>
+    [Parameter]
+    public string? Caption { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Subject { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string Body { get; set; } = "";
+}

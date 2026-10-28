@@ -8,16 +8,30 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
+    <MudAppBar Elevation="0" Class="app-bar">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                        aria-label="Apri o chiudi il menu" title="Menu" OnClick="ToggleDrawer" />
         <img src="img/logo.png" alt="" height="32" class="mx-2" />
-        <MudText Typo="Typo.h6">InSalute</MudText>
+        <MudText Typo="Typo.h6" Class="app-title">InSalute</MudText>
         <MudSpacer />
         <AuthorizeView>
-            <MudMenu Label="@(context.User.FindFirst(AppClaims.DisplayName)?.Value ?? context.User.Identity?.Name)" Color="Color.Inherit" EndIcon="@Icons.Material.Filled.ArrowDropDown">
-                <MudMenuItem Href="profilo">Profilo</MudMenuItem>
-                <MudMenuItem OnClick="LogoutAsync">Esci</MudMenuItem>
+            @{
+                var displayName = context.User.FindFirst(AppClaims.DisplayName)?.Value ?? context.User.Identity?.Name ?? "";
+            }
+            @* Con un attivatore personalizzato MudBlazor 9 non apre il menu da solo: è il pulsante che lo apre e lo chiude. *@
+            <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                <ActivatorContent Context="menu">
+                    <button type="button" class="user-menu" aria-haspopup="menu" aria-label="@($"Menu utente: {displayName}")"
+                            @onclick="e => menu.ToggleAsync(e)">
+                        <MudAvatar Size="Size.Small" Color="Color.Primary">@Initials(displayName)</MudAvatar>
+                        <span class="user-menu-name">@displayName</span>
+                        <MudIcon Icon="@Icons.Material.Filled.ArrowDropDown" aria-hidden="true" />
+                    </button>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Href="profilo" Icon="@Icons.Material.Outlined.Person">Profilo</MudMenuItem>
+                    <MudMenuItem OnClick="LogoutAsync" Icon="@Icons.Material.Outlined.Logout">Esci</MudMenuItem>
+                </ChildContent>
             </MudMenu>
             <form id="logout-form" action="Account/Logout" method="post">
                 <AntiforgeryToken />
@@ -30,13 +44,12 @@
         <NavMenu />
     </MudDrawer>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+    <MudMainContent Class="main-content">
+        @* Contenuto allineato e con la stessa larghezza massima in tutte le pagine. *@
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6 main-content-body">
             @Body
         </MudContainer>
-        <MudText Typo="Typo.caption" Align="Align.Center" Class="my-4">
-            © @DateTime.Now.Year Poliambulatorio InSalute
-        </MudText>
+        <AppFooter />
     </MudMainContent>
 </MudLayout>
 
@@ -53,8 +66,12 @@
     {
         PaletteLight = new PaletteLight
         {
+            // Gli stessi colori del sito del poliambulatorio: blu per le azioni, verde come accento.
             Primary = "#3375B0",
-            Secondary = "#6CBCCE",
+            Secondary = "#00A87E",
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#1F2A33",
+            DrawerBackground = "#FFFFFF",
             Background = "#FAFAFA",
             Surface = "#FFFFFF",
             Success = "#2E7D32",
@@ -62,12 +79,25 @@
             Error = "#C62828",
             TextSecondary = "#5F6B76"
         },
-        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "6px" },
+        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "6px", DrawerWidthLeft = "260px" },
         Typography = new Typography
         {
-            Default = new DefaultTypography { FontFamily = ["Roboto", "sans-serif"] }
+            Default = new DefaultTypography { FontFamily = ["Roboto", "sans-serif"] },
+            // In italiano il maiuscolo pesa e si legge peggio: pulsanti e schede con la sola iniziale maiuscola.
+            Button = new ButtonTypography { TextTransform = "none", FontWeight = "500" }
         }
     };
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..1].ToUpperInvariant(),
+            _ => (parts[0][..1] + parts[^1][..1]).ToUpperInvariant(),
+        };
+    }
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 

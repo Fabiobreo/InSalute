@@ -13,6 +13,14 @@
 <MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Storico invii</MudText>
 
 <MudPaper Class="pa-4 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-center mb-2">
+        <MudText Typo="Typo.body2">Periodo:</MudText>
+        @foreach (var (label, days) in RangePresets)
+        {
+            <MudButton Size="Size.Small" Variant="@(IsRange(days) ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
+                       aria-pressed="@(IsRange(days) ? "true" : "false")" OnClick="() => SetRangeAsync(days)">@label</MudButton>
+        }
+    </div>
     <div class="d-flex flex-wrap gap-4 align-end">
         <MudDatePicker Label="Dal" Date="_from" DateChanged="d => FilterChangedAsync(() => _from = d)" Editable="true" Clearable="true"
                        DateFormat="dd/MM/yyyy" Style="max-width: 170px;" />
@@ -44,7 +52,7 @@
 
 @* Griglia di sola lettura: nessuna colonna modificabile. Il clic su una riga apre il dettaglio; il link nella prima colonna vale per la tastiera. *@
 <MudDataGrid @ref="_grid" T="DispatchListItem" ServerData="LoadAsync" ReadOnly="true" Filterable="false" SortMode="SortMode.None"
-             Hover="true" Dense="true" RowClick="OnRowClick" RowStyle="cursor: pointer;">
+             Hover="true" Dense="false" RowClick="OnRowClick" RowStyle="cursor: pointer;">
     <Columns>
         <TemplateColumn Title="Data e ora" Sortable="false">
             <CellTemplate>
@@ -88,11 +96,23 @@
     private DispatchOverallStatus? _status;
     private string? _operatorId;
 
+    private static readonly (string Label, int Days)[] RangePresets = [("Oggi", 0), ("Ultimi 7 giorni", 7), ("Ultimi 30 giorni", 30)];
+
+    private DateTime Today =>
+        TimeZoneInfo.ConvertTime(Time.GetUtcNow(), TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome")).Date;
+
+    private bool IsRange(int days) => _to == Today && _from == Today.AddDays(-days);
+
+    private Task SetRangeAsync(int days) => FilterChangedAsync(() =>
+    {
+        _to = Today;
+        _from = Today.AddDays(-days);
+    });
+
     protected override async Task OnInitializedAsync()
     {
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Time.GetUtcNow(), TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome")).DateTime);
-        _from = today.AddDays(-30).ToDateTime(TimeOnly.MinValue);
-        _to = today.ToDateTime(TimeOnly.MinValue);
+        _from = Today.AddDays(-30);
+        _to = Today;
 
         await _dbGate.WaitAsync();
         try

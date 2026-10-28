@@ -1,4 +1,5 @@
 using InSalute.Core.Domain;
+using InSalute.Core.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,22 +21,16 @@ public class EmailTemplateConfiguration : IEntityTypeConfiguration<EmailTemplate
             {
                 Id = 1,
                 Kind = EmailTemplateKind.Report,
-                Subject = "Referto",
-                Body = "Buongiorno {NOME} {COGNOME},\n" +
-                       "allego il referto delle analisi.\n" +
-                       "Riceverà una seconda email con la password per poterlo aprire.\n" +
-                       "Grazie\n" +
-                       "Poliambulatorio InSalute",
+                Subject = EmailTemplateDefaults.ReportSubject,
+                Body = EmailTemplateDefaults.ReportBody,
                 UpdatedAt = SeedDate,
             },
             new EmailTemplate
             {
                 Id = 2,
                 Kind = EmailTemplateKind.Password,
-                Subject = "Credenziali",
-                Body = "Buongiorno {NOME} {COGNOME},\n" +
-                       "questa è la password con cui aprire il file ricevuto nell'email precedente: {PASSWORD}\n" +
-                       "Poliambulatorio InSalute",
+                Subject = EmailTemplateDefaults.PasswordSubject,
+                Body = EmailTemplateDefaults.PasswordBody,
                 UpdatedAt = SeedDate,
             });
     }

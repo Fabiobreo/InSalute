@@ -181,6 +181,21 @@ public sealed class InviaRefertoWizardTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_disabled_button_says_why_it_is_disabled()
+    {
+        Render();
+        Assert.Contains("Compila tutti i campi per proseguire.", _cut.Markup);
+
+        FillPatient();
+        Assert.DoesNotContain("Compila tutti i campi per proseguire.", _cut.Markup);
+
+        await GoToSummaryAsync(OnePdf);
+        Assert.Contains("Spunta la conferma per inviare.", _cut.Markup);
+        _cut.Find("input[type=checkbox]").Change(true);
+        Assert.DoesNotContain("Spunta la conferma per inviare.", _cut.Markup);
+    }
+
+    [Fact]
     public async Task When_the_first_email_fails_only_retry_report_is_offered_and_the_password_is_not_sent()
     {
         Render();
@@ -442,6 +457,17 @@ public sealed class InviaRefertoWizardTests : IAsyncLifetime
         Assert.Contains(Messaggi.EmailNonValida, _cut.FindAll(".mud-input-helper-text").Select(e => e.TextContent));
     }
 
+    [Fact]
+    public void Leaving_an_untouched_field_shows_no_error()
+    {
+        Render();
+
+        // "Cognome" ha il focus all'apertura: uscirne senza scrivere non deve segnalare un errore.
+        _cut.FindAll("input")[0].Blur();
+
+        Assert.DoesNotContain(Messaggi.CognomeObbligatorio, _cut.Markup);
+    }
+
     // ---- passo 2: documenti ------------------------------------------------------------------------------------
 
     [Fact]
@@ -594,7 +620,7 @@ public sealed class InviaRefertoWizardTests : IAsyncLifetime
         FillPatient();
         Button("Avanti").Click();
 
-        Assert.Contains("La fattura sarà allegata senza password.", _cut.Markup);
+        Assert.Contains("La fattura sarà allegata senza password", _cut.Markup);
     }
 
     // ---- file scaduti e invii abbandonati dalla pulizia --------------------------------------------------------
@@ -648,7 +674,9 @@ public sealed class InviaRefertoWizardTests : IAsyncLifetime
         Render();
         await GoToSummaryAsync(OnePdf);
 
-        Assert.Contains("Mario Rossi, mario.rossi@example.test", _cut.Markup);
+        Assert.Contains("Mario Rossi", _cut.Markup);
+        // Il dominio è in evidenza, separato dal resto dell'indirizzo.
+        Assert.Contains("mario.rossi<strong>@example.test</strong>", _cut.Markup);
         Assert.Contains("Buongiorno Mario Rossi", _cut.Markup);
         Assert.Contains(DispatchService.PasswordMask, _cut.Markup);
         Assert.Contains("referto.pdf", _cut.Markup);

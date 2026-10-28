@@ -1,8 +1,26 @@
 @inherits LayoutComponentBase
 
+@* Pagine dell'account (accesso, cambio password, blocco): pannello del marchio a sinistra, modulo a destra. Sotto i 900px resta solo il modulo. *@
 <div class="account-page">
-    <div class="account-card">
-        <img class="logo" src="img/logo.png" alt="InSalute" />
-        @Body
-    </div>
+    <aside class="account-brand" aria-hidden="true">
+        <div class="account-brand-inner">
+            <div class="account-brand-logo"><img src="img/logo.png" alt="" /></div>
+            <div class="account-brand-name">InSalute</div>
+            <p class="account-brand-tagline">Invio sicuro dei referti ai pazienti</p>
+            <ul class="account-brand-points">
+                <li>Documenti protetti da password</li>
+                <li>Password inviata in un'email separata</li>
+                <li>Storico di ogni invio</li>
+            </ul>
+        </div>
+        <div class="account-brand-footer">Poliambulatorio InSalute</div>
+    </aside>
+
+    <main class="account-main">
+        <div class="account-card">
+            <img class="logo" src="img/logo.png" alt="InSalute" />
+            @Body
+        </div>
+        <p class="account-legal">© @DateTime.Now.Year InSalute · P.IVA 04333100248</p>
+    </main>
 </div>

@@ -11,7 +11,7 @@
 <PageTitle>Utenti · InSalute</PageTitle>
 
 <div class="d-flex align-center mb-4">
-    <MudText Typo="Typo.h4" Class="flex-grow-1">Utenti</MudText>
+    <MudText Typo="Typo.h4" HtmlTag="h1" Class="flex-grow-1">Utenti</MudText>
     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
                OnClick="NewUserAsync">Nuovo utente</MudButton>
 </div>
@@ -21,8 +21,8 @@
     <MudAlert Severity="Severity.Error" Class="mb-4">@_loadError</MudAlert>
 }
 
-<MudTable Items="_users" Loading="_loading" Hover="true" Dense="false" Breakpoint="Breakpoint.Sm"
-          LoadingProgressColor="Color.Primary">
+<MudTable Items="_users" Loading="_loading" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm"
+          LoadingProgressColor="Color.Primary" RowClassFunc="@((u, _) => u.IsActive ? "" : "riga-disattivata")">
     <HeaderContent>
         <MudTh>Nome visualizzato</MudTh>
         <MudTh>Username</MudTh>
@@ -40,30 +40,37 @@
         <MudTd DataLabel="Stato">
             @if (context.IsActive)
             {
-                <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Text">Attivo</MudChip>
+                <StatoBadge Tone="StatoBadge.Tono.Successo">Attivo</StatoBadge>
             }
             else
             {
-                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Text">Disattivato</MudChip>
+                <StatoBadge Tone="StatoBadge.Tono.Neutro">Disattivato</StatoBadge>
             }
         </MudTd>
         <MudTd DataLabel="Creato il">@DateDisplay.ToLocalText(context.CreatedAt)</MudTd>
         <MudTd DataLabel="Azioni">
-            <MudMenu Icon="@Icons.Material.Filled.MoreVert" AriaLabel="@($"Azioni per {context.DisplayName}")"
-                     title="Azioni" Dense="true">
+            @* L'azione più usata resta visibile; le altre nel menu. *@
+            <div class="d-flex align-center gap-1">
                 @if (context.CanEdit)
                 {
-                    <MudMenuItem OnClick="() => EditAsync(context)">Modifica</MudMenuItem>
+                    <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" OnClick="() => EditAsync(context)"
+                                   aria-label="@($"Modifica {context.DisplayName}")" title="Modifica" />
                 }
-                @if (context.CanResetPassword)
+                @if (context.CanResetPassword || context.CanToggleActive)
                 {
-                    <MudMenuItem OnClick="() => ResetPasswordAsync(context)">Reimposta password</MudMenuItem>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" AriaLabel="@($"Altre azioni per {context.DisplayName}")"
+                             title="Altre azioni" Dense="true">
+                        @if (context.CanResetPassword)
+                        {
+                            <MudMenuItem OnClick="() => ResetPasswordAsync(context)">Reimposta password</MudMenuItem>
+                        }
+                        @if (context.CanToggleActive)
+                        {
+                            <MudMenuItem OnClick="() => ToggleActiveAsync(context)">@(context.IsActive ? "Disattiva" : "Riattiva")</MudMenuItem>
+                        }
+                    </MudMenu>
                 }
-                @if (context.CanToggleActive)
-                {
-                    <MudMenuItem OnClick="() => ToggleActiveAsync(context)">@(context.IsActive ? "Disattiva" : "Riattiva")</MudMenuItem>
-                }
-            </MudMenu>
+            </div>
         </MudTd>
     </RowTemplate>
     <NoRecordsContent>

@@ -2,13 +2,17 @@
 @using InSalute.Core.Domain
 @using InSalute.Core.Security
 @using InSalute.Core.Settings
+@using InSalute.Web.Components.Shared
 @attribute [Authorize(Policy = Policies.CanManageSettings)]
+@implements IDisposable
 @inject EmailTemplateService Templates
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
 
 <PageTitle>Modelli email · InSalute</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Modelli email</MudText>
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Modelli email</MudText>
 
 @if (_loading)
 {
@@ -20,12 +24,13 @@ else if (_loadError is not null)
 }
 else
 {
+    @* Il puntino sulla scheda segnala le modifiche non salvate; il testo accanto a "Salva modello" lo dice per esteso. *@
     <MudTabs Elevation="1" Rounded="true" TabPanelsClass="pa-4">
-        <MudTabPanel Text="Email con il referto">
-            <ModelloEditor State="_report" IdPrefix="referto" />
+        <MudTabPanel Text="Email con il referto" BadgeDot="true" BadgeColor="Color.Warning" BadgeData="@(_report.IsDirty ? "" : null)">
+            <ModelloEditor State="_report" IdPrefix="referto" OnChanged="StateHasChanged" />
         </MudTabPanel>
-        <MudTabPanel Text="Email con la password">
-            <ModelloEditor State="_password" IdPrefix="password" />
+        <MudTabPanel Text="Email con la password" BadgeDot="true" BadgeColor="Color.Warning" BadgeData="@(_password.IsDirty ? "" : null)">
+            <ModelloEditor State="_password" IdPrefix="password" OnChanged="StateHasChanged" />
         </MudTabPanel>
     </MudTabs>
 }
@@ -35,6 +40,7 @@ else
     private string? _loadError;
     private ModelloEditor.EditorState _report = new(EmailTemplateKind.Report);
     private ModelloEditor.EditorState _password = new(EmailTemplateKind.Password);
+    private IDisposable? _locationHandler;
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,8 +56,39 @@ else
                 var state = template.Kind == EmailTemplateKind.Report ? _report : _password;
                 state.Subject = template.Subject;
                 state.Body = template.Body;
+                state.MarkSaved();
             }
         }
         _loading = false;
     }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _locationHandler = Navigation.RegisterLocationChangingHandler(OnLocationChangingAsync);
+        }
+    }
+
+    private async ValueTask OnLocationChangingAsync(LocationChangingContext context)
+    {
+        if (!_report.IsDirty && !_password.IsDirty)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<ConfermaDialog>
+        {
+            { x => x.Message, "Hai modificato un modello senza salvarlo. Se esci le modifiche andranno perse." },
+            { x => x.ConfirmText, "Esci senza salvare" },
+            { x => x.CancelText, "Resta qui" },
+        };
+        var dialog = await DialogService.ShowAsync<ConfermaDialog>("Modifiche non salvate", parameters);
+        if (await dialog.Result is not { Canceled: false })
+        {
+            context.PreventNavigation();
+        }
+    }
+
+    public void Dispose() => _locationHandler?.Dispose();
 }

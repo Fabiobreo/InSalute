@@ -221,7 +221,7 @@ namespace InSalute.Core.Data.Migrations
                             Id = 1,
                             Body = "Buongiorno {NOME} {COGNOME},\nallego il referto delle analisi.\nRiceverà una seconda email con la password per poterlo aprire.\nGrazie\nPoliambulatorio InSalute",
                             Kind = 1,
-                            Subject = "Referto",
+                            Subject = "Il suo referto – Poliambulatorio InSalute",
                             UpdatedAt = new DateTime(2026, 10, 26, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
@@ -229,7 +229,7 @@ namespace InSalute.Core.Data.Migrations
                             Id = 2,
                             Body = "Buongiorno {NOME} {COGNOME},\nquesta è la password con cui aprire il file ricevuto nell'email precedente: {PASSWORD}\nPoliambulatorio InSalute",
                             Kind = 2,
-                            Subject = "Credenziali",
+                            Subject = "Password per aprire il suo referto – Poliambulatorio InSalute",
                             UpdatedAt = new DateTime(2026, 10, 26, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
